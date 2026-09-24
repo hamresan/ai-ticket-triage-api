@@ -17,9 +17,16 @@ class ChatCompletionTransport(Protocol):
 
 
 class HttpxOllamaTransport(ChatCompletionTransport):
-    def __init__(self, *, base_url: str, timeout_seconds: float) -> None:
+    def __init__(
+        self,
+        *,
+        base_url: str,
+        timeout_seconds: float,
+        http_transport: httpx.AsyncBaseTransport | None = None,
+    ) -> None:
         self._base_url = base_url.rstrip("/")
         self._timeout_seconds = timeout_seconds
+        self._http_transport = http_transport
 
     async def complete(self, request: ChatCompletionRequest) -> str:
         payload = {
@@ -29,7 +36,10 @@ class HttpxOllamaTransport(ChatCompletionTransport):
             "format": "json",
         }
         try:
-            async with httpx.AsyncClient(timeout=self._timeout_seconds) as client:
+            async with httpx.AsyncClient(
+                timeout=self._timeout_seconds,
+                transport=self._http_transport,
+            ) as client:
                 response = await client.post(f"{self._base_url}/api/chat", json=payload)
                 response.raise_for_status()
                 body = response.json()
