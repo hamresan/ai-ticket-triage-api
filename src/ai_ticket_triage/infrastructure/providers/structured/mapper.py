@@ -27,4 +27,5 @@ class StructuredTriageResponseMapper:
                 provenance=TriageProvenance.PROVIDER,
             )
         except (ValueError, TriageDomainError) as exc:
-            raise TriageProviderError("Provider response contains an invalid triage value.") from exc
+            message = "Provider response contains an invalid triage value."
+            raise TriageProviderError(message) from exc
