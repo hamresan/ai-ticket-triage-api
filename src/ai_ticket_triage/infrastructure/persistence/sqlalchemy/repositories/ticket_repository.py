@@ -1,7 +1,7 @@
 from uuid import UUID
 
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import async_sessionmaker
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from ai_ticket_triage.application.tickets.dto.ticket_query import TicketFilter
 from ai_ticket_triage.application.tickets.ports import TicketRepository
@@ -11,7 +11,7 @@ from ai_ticket_triage.infrastructure.persistence.sqlalchemy.models import Ticket
 
 
 class SqlAlchemyTicketRepository(TicketRepository):
-    def __init__(self, session_factory: async_sessionmaker) -> None:
+    def __init__(self, session_factory: async_sessionmaker[AsyncSession]) -> None:
         self._session_factory = session_factory
 
     async def add(self, ticket: Ticket) -> None:
