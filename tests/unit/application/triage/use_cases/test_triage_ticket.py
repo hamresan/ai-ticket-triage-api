@@ -61,8 +61,8 @@ def test_provider_decision_is_persisted_with_provider_provenance() -> None:
             repository,
             ScriptedTriageProvider(decision),
             DeterministicTriagePolicy(
-            TriageSignalDetector.default(), FallbackDecisionCatalog.default()
-        ),
+                TriageSignalDetector.default(), FallbackDecisionCatalog.default()
+            ),
             lambda: ticket.updated_at + timedelta(seconds=1),
         )
 
@@ -84,8 +84,8 @@ def test_provider_failure_uses_fallback_and_remains_triaged() -> None:
             repository,
             FailingTriageProvider(),
             DeterministicTriagePolicy(
-            TriageSignalDetector.default(), FallbackDecisionCatalog.default()
-        ),
+                TriageSignalDetector.default(), FallbackDecisionCatalog.default()
+            ),
             lambda: ticket.updated_at + timedelta(seconds=1),
         )
 
@@ -110,8 +110,8 @@ def test_provider_runs_after_create_write_boundary_is_closed() -> None:
             repository,
             provider,
             DeterministicTriagePolicy(
-            TriageSignalDetector.default(), FallbackDecisionCatalog.default()
-        ),
+                TriageSignalDetector.default(), FallbackDecisionCatalog.default()
+            ),
             lambda: created_at + timedelta(seconds=1),
         )
 
