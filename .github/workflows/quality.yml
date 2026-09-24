@@ -15,9 +15,7 @@ jobs:
         with:
           python-version: "3.12"
           enable-cache: true
-      - run: uv sync
-      - name: Export resolved lockfile
-        run: python -c "import base64; print('LOCK_B64=' + base64.b64encode(open('uv.lock','rb').read()).decode())"
+      - run: uv sync --locked
       - run: make check
       - name: Smoke test application startup
         run: |
