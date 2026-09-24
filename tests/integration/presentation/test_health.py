@@ -25,8 +25,7 @@ def test_application_uses_configured_title() -> None:
     assert application.title == "Configured Triage API"
 
 
-def test_public_application_factory_builds_runnable_app(monkeypatch: object) -> None:
-    monkeypatch  # keep strict type checking from hiding the real factory exercise
+def test_public_application_factory_builds_runnable_app() -> None:
     application = create_app()
 
     with TestClient(application) as client:
