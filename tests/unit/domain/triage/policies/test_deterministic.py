@@ -50,9 +50,7 @@ def test_known_signal_boundaries(text, category, priority, sentiment, human_revi
 def test_unknown_input_requires_human_review() -> None:
     decision = DeterministicTriagePolicy(
         TriageSignalDetector.default(), FallbackDecisionCatalog.default()
-    ).decide(
-        build_ticket("General question")
-    )
+    ).decide(build_ticket("General question"))
 
     assert decision.category is Category.UNKNOWN
     assert decision.needs_human_review is True
@@ -61,9 +59,7 @@ def test_unknown_input_requires_human_review() -> None:
 def test_conflicting_signals_require_human_review() -> None:
     decision = DeterministicTriagePolicy(
         TriageSignalDetector.default(), FallbackDecisionCatalog.default()
-    ).decide(
-        build_ticket("Refund", "I need a refund because I cannot log in.")
-    )
+    ).decide(build_ticket("Refund", "I need a refund because I cannot log in."))
 
     assert decision.category is Category.UNKNOWN
     assert decision.needs_human_review is True
