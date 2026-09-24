@@ -2,7 +2,7 @@
 
 > A reliable FastAPI workflow that turns incoming support tickets into validated, structured triage decisions—with deterministic fallbacks when an AI provider is unavailable.
 
-**Status:** Under active development. Stage 3 provides the complete create-and-triage workflow with a deterministic Fake provider, persisted triage decisions, and a conservative rule-based fallback.
+**Status:** Under active development. Stage 5 supports deterministic Fake, Ollama, and OpenAI-compatible triage providers behind the same validated application contract.
 
 ## The problem
 
@@ -140,15 +140,14 @@ TRIAGE_PROVIDER=fake
 # Simple local database
 DATABASE_URL=sqlite+aiosqlite:///./ai_ticket_triage.db
 
-# Used only when TRIAGE_PROVIDER=ollama
-OLLAMA_BASE_URL=http://localhost:11434/v1
-OLLAMA_MODEL=qwen3:8b
+# Required for ollama and openai_compatible
+PROVIDER_MODEL=qwen3:8b
+PROVIDER_BASE_URL=http://localhost:11434
 PROVIDER_TIMEOUT_SECONDS=20
 
-# Used only when TRIAGE_PROVIDER=openai_compatible
-OPENAI_COMPATIBLE_BASE_URL=https://your-provider.example/v1
-OPENAI_COMPATIBLE_API_KEY=
-OPENAI_COMPATIBLE_MODEL=
+# Optional. Used when the selected OpenAI-compatible endpoint requires bearer auth.
+# Keep real credentials only in your local environment or secret manager.
+PROVIDER_API_KEY=
 ```
 
 Never commit a real API key. The default test suite and Fake-provider workflow must remain fully functional without any credentials.
@@ -259,8 +258,10 @@ Contributions are welcome once the implementation is available. Keep changes foc
 This project will be released under the [MIT License](./LICENSE).
 
 
-## Stage 4 provider configuration
+## Provider configuration
 
-The default triage provider remains deterministic `fake`, so local development and CI require no model or network access. Stage 4 also supports the `ollama` provider through the existing `TriageProvider` contract.
+The default triage provider remains deterministic `fake`, so local development and CI require no model, credential, or network access. Set `TRIAGE_PROVIDER=ollama` for Ollama or `TRIAGE_PROVIDER=openai_compatible` for an endpoint that implements the OpenAI chat-completions HTTP shape.
 
-Ollama configuration uses `TRIAGE_PROVIDER=ollama`, `PROVIDER_MODEL=<model>`, `PROVIDER_BASE_URL=http://localhost:11434`, and optional `PROVIDER_TIMEOUT_SECONDS`. Provider responses are treated as untrusted structured data and must satisfy the versioned v1 triage contract. Malformed, invalid, oversized, timed-out, or failed provider responses are mapped to provider failures so the application can use deterministic fallback.
+Both network providers require `PROVIDER_MODEL` and `PROVIDER_BASE_URL`; `PROVIDER_TIMEOUT_SECONDS` is optional. `PROVIDER_API_KEY` is optional for OpenAI-compatible endpoints and, when set, is sent as a bearer token. Ollama uses its native `/api/chat` endpoint; OpenAI-compatible providers use `/chat/completions` relative to the configured base URL.
+
+All providers feed the same versioned v1 triage prompt and strict structured-output validation pipeline. Malformed, invalid, oversized, timed-out, or failed provider responses are mapped to provider failures so the application can use deterministic fallback. Never commit real credentials.
