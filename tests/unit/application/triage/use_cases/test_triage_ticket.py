@@ -2,6 +2,8 @@ import asyncio
 from datetime import UTC, datetime, timedelta
 from uuid import UUID
 
+from ai_ticket_triage.application.tickets.dto import CreateTicketInput
+from ai_ticket_triage.application.tickets.use_cases import CreateTicket
 from ai_ticket_triage.application.triage.dto import TriageTicketInput
 from ai_ticket_triage.application.triage.use_cases import TriageTicket
 from ai_ticket_triage.domain.tickets import Ticket, TicketStatus
@@ -18,6 +20,12 @@ from ai_ticket_triage.domain.triage.policies import DeterministicTriagePolicy, T
 from tests.unit.application.support.failing_triage_provider import FailingTriageProvider
 from tests.unit.application.support.in_memory_ticket_repository import InMemoryTicketRepository
 from tests.unit.application.support.scripted_triage_provider import ScriptedTriageProvider
+from tests.unit.application.support.transaction_aware_triage_provider import (
+    TransactionAwareTriageProvider,
+)
+from tests.unit.application.support.transaction_tracking_repository import (
+    TransactionTrackingTicketRepository,
+)
 
 
 def build_ticket() -> Ticket:
@@ -79,5 +87,28 @@ def test_provider_failure_uses_fallback_and_remains_triaged() -> None:
         assert result.decision is not None
         assert result.decision.category is Category.REFUND
         assert result.decision.provenance is TriageProvenance.FALLBACK
+
+    asyncio.run(exercise())
+
+
+def test_provider_runs_after_create_write_boundary_is_closed() -> None:
+    async def exercise() -> None:
+        repository = TransactionTrackingTicketRepository()
+        created_at = datetime(2026, 9, 24, 12, 0, tzinfo=UTC)
+        ticket_id = UUID("00000000-0000-0000-0000-000000000305")
+        create = CreateTicket(repository, lambda: ticket_id, lambda: created_at)
+        provider = TransactionAwareTriageProvider(repository)
+        triage = TriageTicket(
+            repository,
+            provider,
+            DeterministicTriagePolicy(TriageSignalDetector.default()),
+            lambda: created_at + timedelta(seconds=1),
+        )
+
+        ticket = await create.execute(CreateTicketInput(subject="Error", message="Not working."))
+        await triage.execute(TriageTicketInput(ticket.id))
+
+        assert provider.called_outside_write is True
+        assert repository.write_in_progress is False
 
     asyncio.run(exercise())
