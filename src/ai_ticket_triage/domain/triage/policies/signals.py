@@ -12,7 +12,7 @@ class TriageSignalDetector:
         return cls(
             signals={
                 Category.REFUND: ("refund", "money back", "charged twice", "duplicate charge"),
-                Category.BILLING: ("billing", "invoice", "charge", "payment"),
+                Category.BILLING: ("billing", "invoice", "payment due", "card payment"),
                 Category.ACCOUNT_ACCESS: ("locked out", "cannot log in", "can't log in", "password reset"),
                 Category.TECHNICAL: ("error", "bug", "not working", "technical"),
                 Category.ABUSIVE: ("idiot", "stupid", "useless", "hate you"),
