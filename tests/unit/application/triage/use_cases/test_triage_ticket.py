@@ -1,8 +1,8 @@
 import asyncio
-
-import pytest
 from datetime import UTC, datetime, timedelta
 from uuid import UUID
+
+import pytest
 
 from ai_ticket_triage.application.tickets.dto import CreateTicketInput
 from ai_ticket_triage.application.tickets.errors import TicketNotFoundError
