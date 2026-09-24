@@ -1,7 +1,6 @@
+import asyncio
 from datetime import UTC, datetime
 from uuid import UUID
-
-import pytest
 
 from ai_ticket_triage.application.tickets.ports import TicketRepository
 from ai_ticket_triage.domain.tickets import Ticket, TicketStatus
@@ -9,8 +8,7 @@ from ai_ticket_triage.domain.tickets.value_objects import TicketMessage, TicketS
 from tests.unit.application.support import InMemoryTicketRepository
 
 
-@pytest.mark.asyncio
-async def test_ticket_repository_contract_can_be_exercised_without_infrastructure() -> None:
+def test_ticket_repository_contract_can_be_exercised_without_infrastructure() -> None:
     repository: TicketRepository = InMemoryTicketRepository()
     ticket = Ticket(
         id=UUID("00000000-0000-0000-0000-000000000002"),
@@ -21,7 +19,9 @@ async def test_ticket_repository_contract_can_be_exercised_without_infrastructur
         updated_at=datetime(2026, 9, 24, tzinfo=UTC),
     )
 
-    await repository.add(ticket)
+    async def exercise_contract() -> None:
+        await repository.add(ticket)
+        assert await repository.get_by_id(ticket.id) == ticket
+        assert await repository.list_all() == (ticket,)
 
-    assert await repository.get_by_id(ticket.id) == ticket
-    assert await repository.list_all() == (ticket,)
+    asyncio.run(exercise_contract())
