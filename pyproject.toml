@@ -6,8 +6,11 @@ readme = "README.md"
 requires-python = ">=3.12,<3.13"
 license = { text = "MIT" }
 dependencies = [
+    "aiosqlite>=0.21,<1.0",
+    "alembic>=1.16,<2.0",
     "fastapi>=0.116,<1.0",
     "pydantic-settings>=2.10,<3.0",
+    "sqlalchemy>=2.0.43,<3.0",
     "uvicorn[standard]>=0.35,<1.0",
 ]
 
