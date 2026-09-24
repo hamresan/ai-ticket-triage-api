@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, cast
 
 from ai_ticket_triage.application.triage.errors import TriageProviderError
 from ai_ticket_triage.infrastructure.providers.structured.contracts import (
@@ -16,13 +16,16 @@ _REQUIRED_FIELDS = {
 
 class StructuredTriageOutputValidator:
     def validate(self, payload: Any) -> TriageTaskOutputV1:
-        if not isinstance(payload, dict) or set(payload) != _REQUIRED_FIELDS:
+        if not isinstance(payload, dict):
             raise TriageProviderError("Provider response does not match the v1 schema.")
-        category = payload["category"]
-        priority = payload["priority"]
-        sentiment = payload["sentiment"]
-        human_review = payload["needs_human_review"]
-        suggested_reply = payload["suggested_reply"]
+        fields = cast(dict[str, object], payload)
+        if set(fields) != _REQUIRED_FIELDS:
+            raise TriageProviderError("Provider response does not match the v1 schema.")
+        category = fields["category"]
+        priority = fields["priority"]
+        sentiment = fields["sentiment"]
+        human_review = fields["needs_human_review"]
+        suggested_reply = fields["suggested_reply"]
         if (
             not isinstance(category, str)
             or not isinstance(priority, str)
