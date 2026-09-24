@@ -1,7 +1,7 @@
 from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy import CheckConstraint, DateTime, String
+from sqlalchemy import Boolean, CheckConstraint, DateTime, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from ai_ticket_triage.infrastructure.persistence.sqlalchemy.models.base import Base
@@ -16,6 +16,15 @@ class TicketModel(Base):
         CheckConstraint("length(message) <= 10000", name="ck_tickets_message_length"),
         CheckConstraint("status IN ('new', 'triaged', 'failed')", name="ck_tickets_status"),
         CheckConstraint("updated_at >= created_at", name="ck_tickets_timestamps"),
+        CheckConstraint(
+            "(status = 'triaged' AND category IS NOT NULL AND priority IS NOT NULL "
+            "AND sentiment IS NOT NULL AND needs_human_review IS NOT NULL "
+            "AND suggested_reply IS NOT NULL AND provenance IS NOT NULL) OR "
+            "(status <> 'triaged' AND category IS NULL AND priority IS NULL "
+            "AND sentiment IS NULL AND needs_human_review IS NULL "
+            "AND suggested_reply IS NULL AND provenance IS NULL)",
+            name="ck_tickets_decision_state",
+        ),
     )
     id: Mapped[UUID] = mapped_column(primary_key=True)
     subject: Mapped[str] = mapped_column(String(200), nullable=False)
@@ -23,3 +32,9 @@ class TicketModel(Base):
     status: Mapped[str] = mapped_column(String(16), nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    category: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    priority: Mapped[str | None] = mapped_column(String(16), nullable=True)
+    sentiment: Mapped[str | None] = mapped_column(String(16), nullable=True)
+    needs_human_review: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
+    suggested_reply: Mapped[str | None] = mapped_column(String(4_000), nullable=True)
+    provenance: Mapped[str | None] = mapped_column(String(16), nullable=True)

@@ -13,3 +13,7 @@ def test_missing_ticket_status_maps_to_unfiltered_query() -> None:
     filters = TicketPresentationMapper.to_filter(None)
 
     assert filters.status is None
+
+
+def test_missing_decision_maps_to_none() -> None:
+    assert TicketPresentationMapper.to_decision_response(None) is None

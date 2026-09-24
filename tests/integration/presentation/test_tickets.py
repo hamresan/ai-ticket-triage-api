@@ -29,16 +29,18 @@ def test_create_retrieve_and_filter_ticket(tmp_path: Path, monkeypatch: pytest.M
     )
     assert response.status_code == 201
     created = response.json()
-    assert created["status"] == "new"
+    assert created["status"] == "triaged"
+    assert created["decision"]["provenance"] == "provider"
+    assert created["decision"]["category"] == "technical"
 
     retrieved = client.get(f"/api/v1/tickets/{created['id']}")
     assert retrieved.status_code == 200
     assert retrieved.json() == created
 
-    matching = client.get("/api/v1/tickets", params={"status": "new"})
+    matching = client.get("/api/v1/tickets", params={"status": "triaged"})
     assert matching.status_code == 200
     assert [item["id"] for item in matching.json()] == [created["id"]]
-    assert client.get("/api/v1/tickets", params={"status": "failed"}).json() == []
+    assert client.get("/api/v1/tickets", params={"status": "new"}).json() == []
 
 
 def test_invalid_request_uses_stable_error_envelope(

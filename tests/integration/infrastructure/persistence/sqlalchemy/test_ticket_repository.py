@@ -11,6 +11,14 @@ from sqlalchemy.exc import IntegrityError
 from ai_ticket_triage.application.tickets.dto.ticket_query import TicketFilter
 from ai_ticket_triage.domain.tickets import Ticket, TicketStatus
 from ai_ticket_triage.domain.tickets.value_objects import TicketMessage, TicketSubject
+from ai_ticket_triage.domain.triage import (
+    Category,
+    Priority,
+    Sentiment,
+    SuggestedReply,
+    TriageDecision,
+    TriageProvenance,
+)
 from ai_ticket_triage.infrastructure.persistence.sqlalchemy.database import (
     create_engine,
     create_session_factory,
@@ -70,6 +78,70 @@ def test_database_constraint_rejects_blank_subject(
                     subject=" ",
                     message="message",
                     status="new",
+                    created_at=datetime(2026, 9, 24, tzinfo=UTC),
+                    updated_at=datetime(2026, 9, 24, tzinfo=UTC),
+                )
+            )
+            with pytest.raises(IntegrityError):
+                await session.commit()
+        await engine.dispose()
+
+    asyncio.run(exercise())
+
+
+def test_repository_persists_final_triage_decision(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    database_url = f"sqlite+aiosqlite:///{tmp_path / 'triage.db'}"
+    migrate(database_url, monkeypatch)
+
+    async def exercise() -> None:
+        engine = create_engine(database_url)
+        repository = SqlAlchemyTicketRepository(create_session_factory(engine))
+        now = datetime(2026, 9, 24, 12, 0, tzinfo=UTC)
+        ticket = Ticket(
+            id=UUID("00000000-0000-0000-0000-000000000303"),
+            subject=TicketSubject("Refund"),
+            message=TicketMessage("I need a refund."),
+            status=TicketStatus.NEW,
+            created_at=now,
+            updated_at=now,
+        )
+        await repository.add(ticket)
+        decision = TriageDecision(
+            category=Category.REFUND,
+            priority=Priority.HIGH,
+            sentiment=Sentiment.NEGATIVE,
+            needs_human_review=False,
+            suggested_reply=SuggestedReply("Refund draft."),
+            provenance=TriageProvenance.FALLBACK,
+        )
+        triaged = ticket.mark_triaged(decision, updated_at=now)
+
+        await repository.update(triaged)
+
+        assert await repository.get_by_id(ticket.id) == triaged
+        await engine.dispose()
+
+    asyncio.run(exercise())
+
+
+def test_database_rejects_triaged_status_without_decision(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    database_url = f"sqlite+aiosqlite:///{tmp_path / 'invalid-triage.db'}"
+    migrate(database_url, monkeypatch)
+
+    async def exercise() -> None:
+        engine = create_engine(database_url)
+        session_factory = create_session_factory(engine)
+        async with session_factory() as session:
+            session.add(
+                TicketModel(
+                    id=UUID("00000000-0000-0000-0000-000000000306"),
+                    subject="Technical",
+                    message="Not working.",
+                    status="triaged",
                     created_at=datetime(2026, 9, 24, tzinfo=UTC),
                     updated_at=datetime(2026, 9, 24, tzinfo=UTC),
                 )

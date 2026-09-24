@@ -2,7 +2,7 @@
 
 > A reliable FastAPI workflow that turns incoming support tickets into validated, structured triage decisions—with deterministic fallbacks when an AI provider is unavailable.
 
-**Status:** Under active development. Stage 2 provides the domain contracts, SQLite persistence, Alembic migration, and versioned basic ticket API. Triage is added in the next stage.
+**Status:** Under active development. Stage 3 provides the complete create-and-triage workflow with a deterministic Fake provider, persisted triage decisions, and a conservative rule-based fallback.
 
 ## The problem
 
@@ -155,7 +155,7 @@ Never commit a real API key. The default test suite and Fake-provider workflow m
 
 ## Quick start
 
-Stage 2 exposes an intermediate create-and-persist flow. It stores a ticket as `new`; triage is added in Stage 3.
+Stage 3 exposes the complete create-and-triage flow. A new ticket is committed first, triage runs after that transaction is complete, and the final `triaged` decision is persisted in a separate commit.
 
 ```bash
 curl --request POST "http://localhost:8000/api/v1/tickets" \\
@@ -166,18 +166,18 @@ curl --request POST "http://localhost:8000/api/v1/tickets" \\
   }'
 ```
 
-The Stage 2 response contains the persisted ticket and `status: "new"`. Retrieve it with `GET /api/v1/tickets/{ticket_id}` and list or filter by status with `GET /api/v1/tickets?status=new`.
+The response contains the persisted ticket with `status: "triaged"` and a `decision` object containing category, priority, sentiment, `needs_human_review`, a draft `suggested_reply`, and provenance. The default Fake provider uses `provenance: "provider"`; deterministic fallback decisions use `provenance: "fallback"`.
 
 ## Planned API
 
 | Method | Endpoint | Description |
 | --- | --- | --- |
-| `POST` | `/api/v1/tickets` | Create and persist a `new` ticket (Stage 2 intermediate behavior) |
+| `POST` | `/api/v1/tickets` | Create, triage, persist, and return the final ticket decision |
 | `GET` | `/api/v1/tickets/{ticket_id}` | Retrieve one ticket |
-| `GET` | `/api/v1/tickets` | List tickets; Stage 2 supports status filtering |
+| `GET` | `/api/v1/tickets` | List tickets with status filtering |
 | `GET` | `/health` | Health check for local and container use |
 
-Stage 2 responses expose persisted ticket data only. A validated triage decision is added to the public workflow in Stage 3.
+Stage 3 responses expose the persisted triage decision. Suggested replies are drafts only and are never sent by this service.
 
 ## Triage policy
 
@@ -186,8 +186,8 @@ The initial categories are:
 - `refund`
 - `billing`
 - `account_access`
-- `technical_issue`
-- `abuse`
+- `technical`
+- `abusive`
 - `unknown`
 
 Rule-based fallback is conservative. If a message is ambiguous, incomplete, unsafe, or does not match a reliable category, it is marked `needs_human_review: true` rather than given false confidence.

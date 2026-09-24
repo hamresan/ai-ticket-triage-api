@@ -4,6 +4,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import JSONResponse
 
+from ai_ticket_triage.application.triage.dto import TriageTicketInput
 from ai_ticket_triage.presentation.dependencies import TicketUseCases
 from ai_ticket_triage.presentation.mappers import TicketPresentationMapper
 from ai_ticket_triage.presentation.schemas import (
@@ -26,7 +27,8 @@ def create_ticket_router(
     ) -> TicketResponse:
         create_input = TicketPresentationMapper.to_create_input(request_body)
         ticket = await use_cases.create.execute(create_input)
-        return TicketPresentationMapper.to_response(ticket)
+        triaged = await use_cases.triage.execute(TriageTicketInput(ticket_id=ticket.id))
+        return TicketPresentationMapper.to_response(triaged)
 
     @router.get("/{ticket_id}", response_model=TicketResponse)
     async def get_ticket(
