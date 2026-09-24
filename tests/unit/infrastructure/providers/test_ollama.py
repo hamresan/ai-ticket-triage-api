@@ -11,6 +11,10 @@ from ai_ticket_triage.infrastructure.providers.structured import (
     StructuredTriageResponseMapper,
     TriagePromptBuilder,
 )
+from ai_ticket_triage.infrastructure.providers.structured.parser import StructuredTriageOutputParser
+from ai_ticket_triage.infrastructure.providers.structured.validator import (
+    StructuredTriageOutputValidator,
+)
 from tests.unit.infrastructure.providers.support.scripted_transport import (
     ScriptedChatCompletionTransport,
 )
@@ -33,7 +37,9 @@ def test_ollama_adapter_maps_ticket_request_and_structured_response() -> None:
             model="test-model",
             transport=transport,
             prompt_builder=TriagePromptBuilder(),
-            response_mapper=StructuredTriageResponseMapper(),
+            response_mapper=StructuredTriageResponseMapper(
+                StructuredTriageOutputParser(StructuredTriageOutputValidator())
+            ),
         )
         now = datetime(2026, 9, 24, tzinfo=UTC)
         ticket = Ticket(
