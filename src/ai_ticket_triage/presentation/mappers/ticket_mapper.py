@@ -3,9 +3,14 @@ from ai_ticket_triage.application.tickets.dto.ticket_query import TicketFilter
 from ai_ticket_triage.domain.tickets import Ticket, TicketStatus
 from ai_ticket_triage.domain.triage import TriageDecision
 from ai_ticket_triage.presentation.schemas import (
+    CategoryResponse,
     CreateTicketRequest,
+    PriorityResponse,
+    ProvenanceResponse,
+    SentimentResponse,
     TicketResponse,
     TicketStatusQuery,
+    TicketStatusResponse,
     TriageDecisionResponse,
 )
 
@@ -24,12 +29,12 @@ class TicketPresentationMapper:
         if decision is None:
             return None
         return TriageDecisionResponse(
-            category=decision.category,
-            priority=decision.priority,
-            sentiment=decision.sentiment,
+            category=CategoryResponse(decision.category.value),
+            priority=PriorityResponse(decision.priority.value),
+            sentiment=SentimentResponse(decision.sentiment.value),
             needs_human_review=decision.needs_human_review,
             suggested_reply=decision.suggested_reply.value,
-            provenance=decision.provenance,
+            provenance=ProvenanceResponse(decision.provenance.value),
         )
 
     @staticmethod
@@ -38,7 +43,7 @@ class TicketPresentationMapper:
             id=ticket.id,
             subject=ticket.subject.value,
             message=ticket.message.value,
-            status=ticket.status,
+            status=TicketStatusResponse(ticket.status.value),
             created_at=ticket.created_at,
             updated_at=ticket.updated_at,
             decision=TicketPresentationMapper.to_decision_response(ticket.decision),
