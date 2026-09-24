@@ -2,11 +2,11 @@ from ai_ticket_triage.application.triage.ports import TriageProvider
 from ai_ticket_triage.infrastructure.config.settings import ProviderName, Settings
 from ai_ticket_triage.infrastructure.providers.fake import FakeTriageProvider
 from ai_ticket_triage.infrastructure.providers.ollama import OllamaTriageProvider
-from ai_ticket_triage.infrastructure.providers.openai_compatible_transport import (
-    HttpxOpenAICompatibleTransport,
-)
 from ai_ticket_triage.infrastructure.providers.openai_compatible import (
     OpenAICompatibleTriageProvider,
+)
+from ai_ticket_triage.infrastructure.providers.openai_compatible_transport import (
+    HttpxOpenAICompatibleTransport,
 )
 from ai_ticket_triage.infrastructure.providers.structured import (
     StructuredTriageResponseMapper,
