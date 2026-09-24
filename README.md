@@ -155,47 +155,18 @@ Never commit a real API key. The default test suite and Fake-provider workflow m
 
 ## Quick start
 
-After the API is implemented and running, create a ticket:
+Stage 2 exposes an intermediate create-and-persist flow. It stores a ticket as `new`; triage is added in Stage 3.
 
 ```bash
-curl --request POST "http://localhost:8000/api/v1/tickets" \
-  --header "Content-Type: application/json" \
+curl --request POST "http://localhost:8000/api/v1/tickets" \\
+  --header "Content-Type: application/json" \\
   --data '{
     "subject": "Refund request for my duplicate charge",
-    "message": "I was charged twice and need help getting the duplicate payment refunded.",
-    "customer_reference": "cust_123"
+    "message": "I was charged twice and need help getting the duplicate payment refunded."
   }'
 ```
 
-Expected v1 response:
-
-```json
-{
-  "ticket_id": "tk_01JQ8T31VH4P",
-  "status": "triaged",
-  "subject": "Refund request for my duplicate charge",
-  "decision": {
-    "category": "refund",
-    "priority": "high",
-    "sentiment": "frustrated",
-    "needs_human_review": true,
-    "suggested_reply": "I’m sorry about the duplicate charge. A support specialist will review the refund request.",
-    "provenance": "fallback"
-  }
-}
-```
-
-Retrieve the result later:
-
-```bash
-curl "http://localhost:8000/api/v1/tickets/tk_01JQ8T31VH4P"
-```
-
-Filter tickets needing a human:
-
-```bash
-curl "http://localhost:8000/api/v1/tickets?needs_human_review=true&priority=high&limit=20"
-```
+The Stage 2 response contains the persisted ticket and `status: "new"`. Retrieve it with `GET /api/v1/tickets/{ticket_id}` and list or filter by status with `GET /api/v1/tickets?status=new`.
 
 ## Planned API
 
@@ -206,7 +177,7 @@ curl "http://localhost:8000/api/v1/tickets?needs_human_review=true&priority=high
 | `GET` | `/api/v1/tickets` | List tickets; Stage 2 supports status filtering |
 | `GET` | `/health` | Health check for local and container use |
 
-The public response deliberately contains a validated decision, not an opaque raw model response.
+Stage 2 responses expose persisted ticket data only. A validated triage decision is added to the public workflow in Stage 3.
 
 ## Triage policy
 
