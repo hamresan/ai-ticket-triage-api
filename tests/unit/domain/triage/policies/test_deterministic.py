@@ -6,7 +6,11 @@ import pytest
 from ai_ticket_triage.domain.tickets import Ticket, TicketStatus
 from ai_ticket_triage.domain.tickets.value_objects import TicketMessage, TicketSubject
 from ai_ticket_triage.domain.triage import Category, Priority, Sentiment, TriageProvenance
-from ai_ticket_triage.domain.triage.policies import DeterministicTriagePolicy, TriageSignalDetector
+from ai_ticket_triage.domain.triage.policies import (
+    DeterministicTriagePolicy,
+    FallbackDecisionCatalog,
+    TriageSignalDetector,
+)
 
 
 def build_ticket(subject: str, message: str = "Please help.") -> Ticket:
@@ -32,7 +36,9 @@ def build_ticket(subject: str, message: str = "Please help.") -> Ticket:
     ],
 )
 def test_known_signal_boundaries(text, category, priority, sentiment, human_review) -> None:
-    decision = DeterministicTriagePolicy(TriageSignalDetector.default()).decide(build_ticket(text))
+    decision = DeterministicTriagePolicy(
+            TriageSignalDetector.default(), FallbackDecisionCatalog.default()
+        ).decide(build_ticket(text))
 
     assert decision.category is category
     assert decision.priority is priority
@@ -42,7 +48,9 @@ def test_known_signal_boundaries(text, category, priority, sentiment, human_revi
 
 
 def test_unknown_input_requires_human_review() -> None:
-    decision = DeterministicTriagePolicy(TriageSignalDetector.default()).decide(
+    decision = DeterministicTriagePolicy(
+            TriageSignalDetector.default(), FallbackDecisionCatalog.default()
+        ).decide(
         build_ticket("General question")
     )
 
@@ -51,7 +59,9 @@ def test_unknown_input_requires_human_review() -> None:
 
 
 def test_conflicting_signals_require_human_review() -> None:
-    decision = DeterministicTriagePolicy(TriageSignalDetector.default()).decide(
+    decision = DeterministicTriagePolicy(
+            TriageSignalDetector.default(), FallbackDecisionCatalog.default()
+        ).decide(
         build_ticket("Refund", "I need a refund because I cannot log in.")
     )
 
