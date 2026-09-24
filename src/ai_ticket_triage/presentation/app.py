@@ -2,10 +2,9 @@
 
 from fastapi import FastAPI
 
-from ai_ticket_triage.composition_root import build_application
-from ai_ticket_triage.infrastructure.config import Settings
+from ai_ticket_triage.composition_root import create_application
 
 
 def create_app() -> FastAPI:
-    """Create the application using the runtime settings boundary."""
-    return build_application(Settings())
+    """Create the fully composed runtime application."""
+    return create_application()
