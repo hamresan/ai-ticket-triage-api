@@ -78,9 +78,7 @@ def test_ollama_timeout_persists_fallback_decision(
             lambda: now + timedelta(seconds=1),
         )
         created = await create.execute(
-            CreateTicketInput(
-                subject="Refund request", message="Please refund my order."
-            )
+            CreateTicketInput(subject="Refund request", message="Please refund my order.")
         )
         result = await triage.execute(TriageTicketInput(created.id))
         persisted = await repository.get_by_id(created.id)
