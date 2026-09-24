@@ -3,7 +3,7 @@ from datetime import datetime
 from uuid import UUID
 
 from ai_ticket_triage.domain.tickets.errors import InvalidTicketStateError
-from ai_ticket_triage.domain.tickets.policies import TicketTransitionPolicy
+from ai_ticket_triage.domain.tickets.policies.transitions import TicketTransitionPolicy
 from ai_ticket_triage.domain.tickets.value_objects import TicketMessage, TicketStatus, TicketSubject
 from ai_ticket_triage.domain.triage import TriageDecision
 
