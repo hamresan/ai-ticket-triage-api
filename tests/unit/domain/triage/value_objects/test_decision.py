@@ -43,4 +43,6 @@ def test_suggested_reply_rejects_text_over_limit() -> None:
 
 
 def test_suggested_reply_accepts_exact_limit() -> None:
-    assert len(SuggestedReply("x" * MAX_SUGGESTED_REPLY_LENGTH).value) == MAX_SUGGESTED_REPLY_LENGTH
+    reply = SuggestedReply("x" * MAX_SUGGESTED_REPLY_LENGTH)
+
+    assert len(reply.value) == MAX_SUGGESTED_REPLY_LENGTH
