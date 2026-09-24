@@ -3,6 +3,7 @@ from datetime import datetime
 from uuid import UUID
 
 from ai_ticket_triage.domain.tickets.errors import InvalidTicketStateError
+from ai_ticket_triage.domain.tickets.policies import TicketTransitionPolicy
 from ai_ticket_triage.domain.tickets.value_objects import TicketMessage, TicketStatus, TicketSubject
 from ai_ticket_triage.domain.triage import TriageDecision
 
@@ -26,8 +27,7 @@ class Ticket:
             raise InvalidTicketStateError("Only a triaged ticket may have a triage decision.")
 
     def mark_triaged(self, decision: TriageDecision, *, updated_at: datetime) -> "Ticket":
-        self._require_new_status()
-        self._require_valid_update_time(updated_at)
+        TicketTransitionPolicy.validate(self.status, self.updated_at, updated_at)
         return replace(
             self,
             status=TicketStatus.TRIAGED,
@@ -36,16 +36,5 @@ class Ticket:
         )
 
     def mark_failed(self, *, updated_at: datetime) -> "Ticket":
-        self._require_new_status()
-        self._require_valid_update_time(updated_at)
+        TicketTransitionPolicy.validate(self.status, self.updated_at, updated_at)
         return replace(self, status=TicketStatus.FAILED, updated_at=updated_at)
-
-    def _require_new_status(self) -> None:
-        if self.status is not TicketStatus.NEW:
-            raise InvalidTicketStateError(
-                f"Ticket cannot transition from terminal status '{self.status.value}'."
-            )
-
-    def _require_valid_update_time(self, updated_at: datetime) -> None:
-        if updated_at < self.updated_at:
-            raise InvalidTicketStateError("Transition time cannot move backwards.")
