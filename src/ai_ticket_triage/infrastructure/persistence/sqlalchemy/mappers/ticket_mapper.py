@@ -3,7 +3,9 @@ from ai_ticket_triage.domain.tickets.value_objects import TicketMessage, TicketS
 from ai_ticket_triage.infrastructure.persistence.sqlalchemy.mappers.datetime_normalizer import (
     DatabaseDateTimeNormalizer,
 )
-from ai_ticket_triage.infrastructure.persistence.sqlalchemy.mappers.decision_mapper import DecisionMapper
+from ai_ticket_triage.infrastructure.persistence.sqlalchemy.mappers.decision_mapper import (
+    DecisionMapper,
+)
 from ai_ticket_triage.infrastructure.persistence.sqlalchemy.models import TicketModel
 
 
