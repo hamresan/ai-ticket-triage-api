@@ -1,3 +1,5 @@
+from enum import StrEnum
+
 import pytest
 
 from ai_ticket_triage.domain.tickets import TicketStatus
@@ -14,7 +16,9 @@ from ai_ticket_triage.domain.triage import Category, Priority, Sentiment, Triage
         (TriageProvenance, "manual"),
     ],
 )
-def test_domain_enums_reject_unsupported_values(enum_type: type, invalid_value: str) -> None:
+def test_domain_enums_reject_unsupported_values(
+    enum_type: type[StrEnum], invalid_value: str
+) -> None:
     with pytest.raises(ValueError):
         enum_type(invalid_value)
 
