@@ -16,7 +16,11 @@ from ai_ticket_triage.domain.triage import (
     TriageDecision,
     TriageProvenance,
 )
-from ai_ticket_triage.domain.triage.policies import DeterministicTriagePolicy, TriageSignalDetector
+from ai_ticket_triage.domain.triage.policies import (
+    DeterministicTriagePolicy,
+    FallbackDecisionCatalog,
+    TriageSignalDetector,
+)
 from tests.unit.application.support.failing_triage_provider import FailingTriageProvider
 from tests.unit.application.support.in_memory_ticket_repository import InMemoryTicketRepository
 from tests.unit.application.support.scripted_triage_provider import ScriptedTriageProvider
@@ -56,7 +60,9 @@ def test_provider_decision_is_persisted_with_provider_provenance() -> None:
         use_case = TriageTicket(
             repository,
             ScriptedTriageProvider(decision),
-            DeterministicTriagePolicy(TriageSignalDetector.default()),
+            DeterministicTriagePolicy(
+            TriageSignalDetector.default(), FallbackDecisionCatalog.default()
+        ),
             lambda: ticket.updated_at + timedelta(seconds=1),
         )
 
@@ -77,7 +83,9 @@ def test_provider_failure_uses_fallback_and_remains_triaged() -> None:
         use_case = TriageTicket(
             repository,
             FailingTriageProvider(),
-            DeterministicTriagePolicy(TriageSignalDetector.default()),
+            DeterministicTriagePolicy(
+            TriageSignalDetector.default(), FallbackDecisionCatalog.default()
+        ),
             lambda: ticket.updated_at + timedelta(seconds=1),
         )
 
@@ -101,7 +109,9 @@ def test_provider_runs_after_create_write_boundary_is_closed() -> None:
         triage = TriageTicket(
             repository,
             provider,
-            DeterministicTriagePolicy(TriageSignalDetector.default()),
+            DeterministicTriagePolicy(
+            TriageSignalDetector.default(), FallbackDecisionCatalog.default()
+        ),
             lambda: created_at + timedelta(seconds=1),
         )
 
