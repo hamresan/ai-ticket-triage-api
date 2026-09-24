@@ -7,7 +7,9 @@ from ai_ticket_triage.infrastructure.providers.structured import (
     TriagePromptBuilder,
 )
 from ai_ticket_triage.infrastructure.providers.structured.parser import StructuredTriageOutputParser
-from ai_ticket_triage.infrastructure.providers.structured.validator import StructuredTriageOutputValidator
+from ai_ticket_triage.infrastructure.providers.structured.validator import (
+    StructuredTriageOutputValidator,
+)
 from ai_ticket_triage.infrastructure.providers.transport import HttpxOllamaTransport
 
 
