@@ -2,7 +2,7 @@
 
 > A reliable FastAPI workflow that turns incoming support tickets into validated, structured triage decisions—with deterministic fallbacks when an AI provider is unavailable.
 
-**Status:** Under active development. Stage 0 provides the executable FastAPI application shell, typed settings, health endpoint, quality tooling, and CI. Ticket-domain and triage endpoints remain planned for later stages.
+**Status:** Under active development. Stage 2 provides the domain contracts, SQLite persistence, Alembic migration, and versioned basic ticket API. Triage is added in the next stage.
 
 ## The problem
 
@@ -51,7 +51,7 @@ This is intentionally an operational AI component—not an unbounded agent demo.
 ## Planned workflow
 
 ```text
-POST /tickets
+POST /api/v1/tickets
     │
     ▼
 Validate input → create ticket → request triage decision
@@ -158,7 +158,7 @@ Never commit a real API key. The default test suite and Fake-provider workflow m
 After the API is implemented and running, create a ticket:
 
 ```bash
-curl --request POST "http://localhost:8000/tickets" \
+curl --request POST "http://localhost:8000/api/v1/tickets" \
   --header "Content-Type: application/json" \
   --data '{
     "subject": "Refund request for my duplicate charge",
@@ -188,22 +188,22 @@ Expected v1 response:
 Retrieve the result later:
 
 ```bash
-curl "http://localhost:8000/tickets/tk_01JQ8T31VH4P"
+curl "http://localhost:8000/api/v1/tickets/tk_01JQ8T31VH4P"
 ```
 
 Filter tickets needing a human:
 
 ```bash
-curl "http://localhost:8000/tickets?needs_human_review=true&priority=high&limit=20"
+curl "http://localhost:8000/api/v1/tickets?needs_human_review=true&priority=high&limit=20"
 ```
 
 ## Planned API
 
 | Method | Endpoint | Description |
 | --- | --- | --- |
-| `POST` | `/tickets` | Create, triage, and persist a support ticket |
-| `GET` | `/tickets/{ticket_id}` | Retrieve one ticket and its triage decision |
-| `GET` | `/tickets` | Filter by status, category, priority, or review flag |
+| `POST` | `/api/v1/tickets` | Create and persist a `new` ticket (Stage 2 intermediate behavior) |
+| `GET` | `/api/v1/tickets/{ticket_id}` | Retrieve one ticket |
+| `GET` | `/api/v1/tickets` | List tickets; Stage 2 supports status filtering |
 | `GET` | `/health` | Health check for local and container use |
 
 The public response deliberately contains a validated decision, not an opaque raw model response.
