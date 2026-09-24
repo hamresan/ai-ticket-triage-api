@@ -20,7 +20,7 @@ from ai_ticket_triage.infrastructure.persistence.sqlalchemy.database import (
 from ai_ticket_triage.infrastructure.persistence.sqlalchemy.repositories import (
     SqlAlchemyTicketRepository,
 )
-from ai_ticket_triage.infrastructure.providers import FakeTriageProvider
+from ai_ticket_triage.infrastructure.providers import TriageProviderFactory
 from ai_ticket_triage.presentation.dependencies import TicketUseCases
 from ai_ticket_triage.presentation.errors import register_error_handlers
 from ai_ticket_triage.presentation.middleware import RequestIdMiddleware
@@ -35,11 +35,13 @@ def build_application(settings: Settings) -> FastAPI:
     def clock() -> datetime:
         return datetime.now(UTC)
 
+    provider = TriageProviderFactory().create(settings)
+
     ticket_use_cases = TicketUseCases(
         create=CreateTicket(repository, uuid4, clock),
         triage=TriageTicket(
             repository=repository,
-            provider=FakeTriageProvider(),
+            provider=provider,
             fallback=DeterministicTriagePolicy(
                 TriageSignalDetector.default(), FallbackDecisionCatalog.default()
             ),
