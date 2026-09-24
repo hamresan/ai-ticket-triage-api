@@ -1,9 +1,10 @@
-"""Integration tests for the real FastAPI health endpoint."""
+"""Integration tests for the real FastAPI application and health endpoint."""
 
 from fastapi.testclient import TestClient
 
 from ai_ticket_triage.composition_root import build_application
 from ai_ticket_triage.infrastructure.config import AppEnvironment, Settings
+from ai_ticket_triage.presentation.app import create_app
 
 
 def test_health_endpoint_returns_ok() -> None:
@@ -22,3 +23,13 @@ def test_application_uses_configured_title() -> None:
     application = build_application(settings)
 
     assert application.title == "Configured Triage API"
+
+
+def test_public_application_factory_builds_runnable_app(monkeypatch: object) -> None:
+    monkeypatch  # keep strict type checking from hiding the real factory exercise
+    application = create_app()
+
+    with TestClient(application) as client:
+        response = client.get("/health")
+
+    assert response.status_code == 200
