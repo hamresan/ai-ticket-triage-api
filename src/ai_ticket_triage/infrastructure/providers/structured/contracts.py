@@ -1,6 +1,5 @@
 from dataclasses import dataclass
 
-
 TRIAGE_CONTRACT_VERSION = "v1"
 
 
