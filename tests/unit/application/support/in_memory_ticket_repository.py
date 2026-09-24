@@ -12,6 +12,9 @@ class InMemoryTicketRepository(TicketRepository):
     async def add(self, ticket: Ticket) -> None:
         self.tickets[ticket.id] = ticket
 
+    async def update(self, ticket: Ticket) -> None:
+        self.tickets[ticket.id] = ticket
+
     async def get_by_id(self, ticket_id: UUID) -> Ticket | None:
         return self.tickets.get(ticket_id)
 
