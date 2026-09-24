@@ -1,8 +1,9 @@
 from typing import Any
 
 from ai_ticket_triage.application.triage.errors import TriageProviderError
-from ai_ticket_triage.infrastructure.providers.structured.contracts import TriageTaskOutputV1
-
+from ai_ticket_triage.infrastructure.providers.structured.contracts import (
+    TriageTaskOutputV1,
+)
 
 _REQUIRED_FIELDS = {
     "category",
