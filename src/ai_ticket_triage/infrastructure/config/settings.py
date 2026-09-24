@@ -2,6 +2,7 @@
 
 from enum import StrEnum
 
+from pydantic import SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -11,6 +12,11 @@ class AppEnvironment(StrEnum):
     LOCAL = "local"
     TEST = "test"
     PRODUCTION = "production"
+
+
+class ProviderName(StrEnum):
+    FAKE = "fake"
+    OLLAMA = "ollama"
 
 
 class Settings(BaseSettings):
@@ -25,3 +31,8 @@ class Settings(BaseSettings):
     app_name: str = "AI Support Ticket Triage API"
     app_env: AppEnvironment = AppEnvironment.LOCAL
     database_url: str = "sqlite+aiosqlite:///./ai_ticket_triage.db"
+    triage_provider: ProviderName = ProviderName.FAKE
+    provider_model: str | None = None
+    provider_timeout_seconds: float = 10.0
+    provider_base_url: str | None = None
+    provider_api_key: SecretStr | None = None
