@@ -1,7 +1,8 @@
-from datetime import UTC, datetime
-
 from ai_ticket_triage.domain.tickets import Ticket, TicketStatus
 from ai_ticket_triage.domain.tickets.value_objects import TicketMessage, TicketSubject
+from ai_ticket_triage.infrastructure.persistence.sqlalchemy.mappers.datetime_normalizer import (
+    DatabaseDateTimeNormalizer,
+)
 from ai_ticket_triage.infrastructure.persistence.sqlalchemy.models import TicketModel
 
 
@@ -24,10 +25,6 @@ class TicketMapper:
             subject=TicketSubject(model.subject),
             message=TicketMessage(model.message),
             status=TicketStatus(model.status),
-            created_at=TicketMapper._as_utc(model.created_at),
-            updated_at=TicketMapper._as_utc(model.updated_at),
+            created_at=DatabaseDateTimeNormalizer.as_utc(model.created_at),
+            updated_at=DatabaseDateTimeNormalizer.as_utc(model.updated_at),
         )
-
-    @staticmethod
-    def _as_utc(value: datetime) -> datetime:
-        return value.replace(tzinfo=UTC) if value.tzinfo is None else value.astimezone(UTC)
