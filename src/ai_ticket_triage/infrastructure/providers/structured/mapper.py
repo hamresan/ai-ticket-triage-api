@@ -12,8 +12,8 @@ from ai_ticket_triage.infrastructure.providers.structured.parser import Structur
 
 
 class StructuredTriageResponseMapper:
-    def __init__(self, parser: StructuredTriageOutputParser | None = None) -> None:
-        self._parser = parser or StructuredTriageOutputParser()
+    def __init__(self, parser: StructuredTriageOutputParser) -> None:
+        self._parser = parser
 
     def map(self, content: str) -> TriageDecision:
         output = self._parser.parse(content)
