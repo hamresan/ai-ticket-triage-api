@@ -7,8 +7,6 @@ requires-python = ">=3.12,<3.13"
 license = { text = "MIT" }
 dependencies = [
     "fastapi>=0.116,<1.0",
-    "httpx>=0.28.1",
-    "httpx2>=2.13.1",
     "pydantic-settings>=2.10,<3.0",
     "uvicorn[standard]>=0.35,<1.0",
 ]
