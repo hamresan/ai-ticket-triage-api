@@ -17,6 +17,7 @@ class AppEnvironment(StrEnum):
 class ProviderName(StrEnum):
     FAKE = "fake"
     OLLAMA = "ollama"
+    OPENAI_COMPATIBLE = "openai_compatible"
 
 
 class Settings(BaseSettings):
