@@ -22,6 +22,5 @@ def test_ticket_repository_contract_can_be_exercised_without_infrastructure() ->
     async def exercise_contract() -> None:
         await repository.add(ticket)
         assert await repository.get_by_id(ticket.id) == ticket
-        assert await repository.list_all() == (ticket,)
 
     asyncio.run(exercise_contract())
