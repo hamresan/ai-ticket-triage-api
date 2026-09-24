@@ -31,6 +31,7 @@ def build_application(settings: Settings) -> FastAPI:
     """Build the HTTP application from explicit dependencies."""
     engine = create_engine(settings.database_url)
     repository = SqlAlchemyTicketRepository(create_session_factory(engine))
+
     def clock() -> datetime:
         return datetime.now(UTC)
     ticket_use_cases = TicketUseCases(
@@ -39,8 +40,8 @@ def build_application(settings: Settings) -> FastAPI:
             repository=repository,
             provider=FakeTriageProvider(),
             fallback=DeterministicTriagePolicy(
-            TriageSignalDetector.default(), FallbackDecisionCatalog.default()
-        ),
+                TriageSignalDetector.default(), FallbackDecisionCatalog.default()
+            ),
             clock=clock,
         ),
         get=GetTicket(repository),
