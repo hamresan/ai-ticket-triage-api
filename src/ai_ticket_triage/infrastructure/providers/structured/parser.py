@@ -13,8 +13,8 @@ MAX_PROVIDER_RESPONSE_LENGTH = 16_000
 
 
 class StructuredTriageOutputParser:
-    def __init__(self, validator: StructuredTriageOutputValidator | None = None) -> None:
-        self._validator = validator or StructuredTriageOutputValidator()
+    def __init__(self, validator: StructuredTriageOutputValidator) -> None:
+        self._validator = validator
 
     def parse(self, content: str) -> TriageTaskOutputV1:
         if len(content) > MAX_PROVIDER_RESPONSE_LENGTH:
