@@ -6,6 +6,8 @@ from ai_ticket_triage.infrastructure.providers.structured import (
     StructuredTriageResponseMapper,
     TriagePromptBuilder,
 )
+from ai_ticket_triage.infrastructure.providers.structured.parser import StructuredTriageOutputParser
+from ai_ticket_triage.infrastructure.providers.structured.validator import StructuredTriageOutputValidator
 from ai_ticket_triage.infrastructure.providers.transport import HttpxOllamaTransport
 
 
@@ -29,7 +31,9 @@ class TriageProviderFactory:
                     timeout_seconds=settings.provider_timeout_seconds,
                 ),
                 prompt_builder=TriagePromptBuilder(),
-                response_mapper=StructuredTriageResponseMapper(),
+                response_mapper=StructuredTriageResponseMapper(
+                    StructuredTriageOutputParser(StructuredTriageOutputValidator())
+                ),
             )
         raise ProviderConfigurationError(
             f"Unsupported triage provider: {settings.triage_provider!s}"
