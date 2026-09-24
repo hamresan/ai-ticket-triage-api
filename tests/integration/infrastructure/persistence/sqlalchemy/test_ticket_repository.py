@@ -124,3 +124,30 @@ def test_repository_persists_final_triage_decision(
         await engine.dispose()
 
     asyncio.run(exercise())
+
+
+def test_database_rejects_triaged_status_without_decision(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    database_url = f"sqlite+aiosqlite:///{tmp_path / 'invalid-triage.db'}"
+    migrate(database_url, monkeypatch)
+
+    async def exercise() -> None:
+        engine = create_engine(database_url)
+        session_factory = create_session_factory(engine)
+        async with session_factory() as session:
+            session.add(
+                TicketModel(
+                    id=UUID("00000000-0000-0000-0000-000000000306"),
+                    subject="Technical",
+                    message="Not working.",
+                    status="triaged",
+                    created_at=datetime(2026, 9, 24, tzinfo=UTC),
+                    updated_at=datetime(2026, 9, 24, tzinfo=UTC),
+                )
+            )
+            with pytest.raises(IntegrityError):
+                await session.commit()
+        await engine.dispose()
+
+    asyncio.run(exercise())
