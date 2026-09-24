@@ -1,7 +1,6 @@
+import asyncio
 from datetime import UTC, datetime
 from uuid import UUID
-
-import pytest
 
 from ai_ticket_triage.application.triage.ports import TriageProvider
 from ai_ticket_triage.domain.tickets import Ticket, TicketStatus
@@ -17,8 +16,7 @@ from ai_ticket_triage.domain.triage import (
 from tests.unit.application.support import ScriptedTriageProvider
 
 
-@pytest.mark.asyncio
-async def test_triage_provider_contract_can_be_exercised_without_infrastructure() -> None:
+def test_triage_provider_contract_can_be_exercised_without_infrastructure() -> None:
     decision = TriageDecision(
         category=Category.BILLING,
         priority=Priority.HIGH,
@@ -37,4 +35,4 @@ async def test_triage_provider_contract_can_be_exercised_without_infrastructure(
         updated_at=datetime(2026, 9, 24, tzinfo=UTC),
     )
 
-    assert await provider.triage(ticket) == decision
+    assert asyncio.run(provider.triage(ticket)) == decision
