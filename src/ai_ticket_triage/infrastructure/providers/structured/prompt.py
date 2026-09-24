@@ -2,7 +2,6 @@ import json
 
 from ai_ticket_triage.infrastructure.providers.structured.contracts import TriageTaskInputV1
 
-
 TRIAGE_PROMPT_VERSION = "v1"
 
 
