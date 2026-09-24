@@ -4,6 +4,7 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from ai_ticket_triage.domain.tickets import TicketStatus
+from ai_ticket_triage.domain.triage import Category, Priority, Sentiment, TriageProvenance
 
 
 class CreateTicketRequest(BaseModel):
@@ -19,6 +20,15 @@ class CreateTicketRequest(BaseModel):
         return value
 
 
+class TriageDecisionResponse(BaseModel):
+    category: Category
+    priority: Priority
+    sentiment: Sentiment
+    needs_human_review: bool
+    suggested_reply: str
+    provenance: TriageProvenance
+
+
 class TicketResponse(BaseModel):
     id: UUID
     subject: str
@@ -26,3 +36,4 @@ class TicketResponse(BaseModel):
     status: TicketStatus
     created_at: datetime
     updated_at: datetime
+    decision: TriageDecisionResponse | None
