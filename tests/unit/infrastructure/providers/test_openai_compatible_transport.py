@@ -23,11 +23,7 @@ def test_transport_maps_openai_compatible_request_and_response() -> None:
             }
             return httpx.Response(
                 200,
-                json={
-                    "choices": [
-                        {"message": {"content": '{"category":"technical"}'}}
-                    ]
-                },
+                json={"choices": [{"message": {"content": '{"category":"technical"}'}}]},
             )
 
         transport = HttpxOpenAICompatibleTransport(
@@ -37,9 +33,7 @@ def test_transport_maps_openai_compatible_request_and_response() -> None:
             http_transport=httpx.MockTransport(handler),
         )
 
-        content = await transport.complete(
-            ChatCompletionRequest("test-model", "test prompt")
-        )
+        content = await transport.complete(ChatCompletionRequest("test-model", "test prompt"))
 
         assert content == '{"category":"technical"}'
 
