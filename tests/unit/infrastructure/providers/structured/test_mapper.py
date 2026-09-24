@@ -9,7 +9,17 @@ from ai_ticket_triage.infrastructure.providers.structured.mapper import (
 )
 from ai_ticket_triage.infrastructure.providers.structured.parser import (
     MAX_PROVIDER_RESPONSE_LENGTH,
+    StructuredTriageOutputParser,
 )
+from ai_ticket_triage.infrastructure.providers.structured.validator import (
+    StructuredTriageOutputValidator,
+)
+
+
+def build_mapper() -> StructuredTriageResponseMapper:
+    return StructuredTriageResponseMapper(
+        StructuredTriageOutputParser(StructuredTriageOutputValidator())
+    )
 
 
 def valid_payload() -> dict[str, object]:
@@ -23,7 +33,7 @@ def valid_payload() -> dict[str, object]:
 
 
 def test_valid_structured_response_maps_to_domain_decision() -> None:
-    decision = StructuredTriageResponseMapper().map(json.dumps(valid_payload()))
+    decision = build_mapper().map(json.dumps(valid_payload()))
 
     assert decision.category is Category.REFUND
     assert decision.priority is Priority.HIGH
@@ -47,9 +57,9 @@ def test_valid_structured_response_maps_to_domain_decision() -> None:
 )
 def test_invalid_structured_response_is_rejected(content: str) -> None:
     with pytest.raises(TriageProviderError):
-        StructuredTriageResponseMapper().map(content)
+        build_mapper().map(content)
 
 
 def test_excessively_long_response_is_rejected() -> None:
     with pytest.raises(TriageProviderError):
-        StructuredTriageResponseMapper().map("x" * (MAX_PROVIDER_RESPONSE_LENGTH + 1))
+        build_mapper().map("x" * (MAX_PROVIDER_RESPONSE_LENGTH + 1))
