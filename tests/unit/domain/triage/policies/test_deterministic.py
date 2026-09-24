@@ -35,7 +35,13 @@ def build_ticket(subject: str, message: str = "Please help.") -> Ticket:
         ("Your service is useless", Category.ABUSIVE, Priority.URGENT, Sentiment.FRUSTRATED, True),
     ],
 )
-def test_known_signal_boundaries(text, category, priority, sentiment, human_review) -> None:
+def test_known_signal_boundaries(
+    text: str,
+    category: Category,
+    priority: Priority,
+    sentiment: Sentiment,
+    human_review: bool,
+) -> None:
     decision = DeterministicTriagePolicy(
         TriageSignalDetector.default(), FallbackDecisionCatalog.default()
     ).decide(build_ticket(text))
