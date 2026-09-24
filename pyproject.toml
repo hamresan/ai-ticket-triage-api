@@ -48,3 +48,11 @@ venv = ".venv"
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-ra"
+
+[tool.coverage.run]
+branch = true
+source = ["ai_ticket_triage"]
+
+[tool.coverage.report]
+fail_under = 85
+show_missing = true
