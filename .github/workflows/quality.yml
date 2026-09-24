@@ -1,0 +1,31 @@
+name: Quality
+
+on:
+  push:
+    branches: ["main", "stage-*"]
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+          enable-cache: true
+      - run: uv sync
+      - run: make check
+      - name: Smoke test application startup
+        run: |
+          uv run uvicorn ai_ticket_triage.presentation.app:create_app --factory --host 127.0.0.1 --port 8000 &
+          server_pid=$!
+          trap 'kill "$server_pid"' EXIT
+          for attempt in {1..20}; do
+            if curl --fail --silent http://127.0.0.1:8000/health; then
+              exit 0
+            fi
+            sleep 0.5
+          done
+          exit 1

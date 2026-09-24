@@ -2,7 +2,7 @@
 
 > A reliable FastAPI workflow that turns incoming support tickets into validated, structured triage decisions—with deterministic fallbacks when an AI provider is unavailable.
 
-**Status:** Under active development. This repository currently defines the public product contract and implementation roadmap. The commands and API examples below describe the planned **v1** interface and become executable as their implementation stages are completed.
+**Status:** Under active development. Stage 0 provides the executable FastAPI application shell, typed settings, health endpoint, quality tooling, and CI. Ticket-domain and triage endpoints remain planned for later stages.
 
 ## The problem
 
@@ -256,7 +256,7 @@ Development is split into individually reviewed branches:
 7. Reliability, idempotency, filtering, and API error policy
 8. Release hardening, documentation, Docker, and public repository hygiene
 
-Each stage is developed on a dedicated branch and merges only after Ruff, formatting, Pyright, tests, branch coverage, and CI pass. The detailed roadmap will be added to the repository with the first implementation stage.
+Each stage is developed on a dedicated branch and merges only after Ruff, formatting, Pyright, tests, branch coverage, and CI pass. See the [detailed implementation roadmap](./docs/implementation-roadmap.md) for stage scope, acceptance criteria, branch names, and the definition of done.
 
 ## Safety and privacy notes
 
