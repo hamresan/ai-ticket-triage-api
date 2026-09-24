@@ -186,8 +186,8 @@ The initial categories are:
 - `refund`
 - `billing`
 - `account_access`
-- `technical_issue`
-- `abuse`
+- `technical`
+- `abusive`
 - `unknown`
 
 Rule-based fallback is conservative. If a message is ambiguous, incomplete, unsafe, or does not match a reliable category, it is marked `needs_human_review: true` rather than given false confidence.
