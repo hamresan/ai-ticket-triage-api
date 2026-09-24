@@ -1,8 +1,11 @@
 import asyncio
+
+import pytest
 from datetime import UTC, datetime, timedelta
 from uuid import UUID
 
 from ai_ticket_triage.application.tickets.dto import CreateTicketInput
+from ai_ticket_triage.application.tickets.errors import TicketNotFoundError
 from ai_ticket_triage.application.tickets.use_cases import CreateTicket
 from ai_ticket_triage.application.triage.dto import TriageTicketInput
 from ai_ticket_triage.application.triage.use_cases import TriageTicket
@@ -120,5 +123,33 @@ def test_provider_runs_after_create_write_boundary_is_closed() -> None:
 
         assert provider.called_outside_write is True
         assert repository.write_in_progress is False
+
+    asyncio.run(exercise())
+
+
+def test_missing_ticket_is_rejected_before_provider_call() -> None:
+    async def exercise() -> None:
+        repository = InMemoryTicketRepository()
+        ticket = build_ticket()
+        use_case = TriageTicket(
+            repository,
+            ScriptedTriageProvider(
+                TriageDecision(
+                    category=Category.TECHNICAL,
+                    priority=Priority.MEDIUM,
+                    sentiment=Sentiment.NEUTRAL,
+                    needs_human_review=False,
+                    suggested_reply=SuggestedReply("Draft."),
+                    provenance=TriageProvenance.PROVIDER,
+                )
+            ),
+            DeterministicTriagePolicy(
+                TriageSignalDetector.default(), FallbackDecisionCatalog.default()
+            ),
+            lambda: ticket.updated_at,
+        )
+
+        with pytest.raises(TicketNotFoundError):
+            await use_case.execute(TriageTicketInput(ticket.id))
 
     asyncio.run(exercise())
