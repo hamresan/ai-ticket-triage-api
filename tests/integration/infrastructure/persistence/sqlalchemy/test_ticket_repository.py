@@ -46,7 +46,8 @@ def test_repository_round_trip_and_status_filter(
         )
         await repository.add(ticket)
         assert await repository.get_by_id(ticket.id) == ticket
-        assert await repository.list(TicketFilter()) == (ticket,)\n        assert await repository.list(TicketFilter(status=TicketStatus.NEW)) == (ticket,)
+        assert await repository.list(TicketFilter()) == (ticket,)
+        assert await repository.list(TicketFilter(status=TicketStatus.NEW)) == (ticket,)
         assert await repository.list(TicketFilter(status=TicketStatus.FAILED)) == ()
         await engine.dispose()
 
