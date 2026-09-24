@@ -11,3 +11,8 @@ def build_application(settings: Settings) -> FastAPI:
     application = FastAPI(title=settings.app_name)
     application.include_router(health_router)
     return application
+
+
+def create_application() -> FastAPI:
+    """Build the runtime application from environment-backed settings."""
+    return build_application(Settings())
