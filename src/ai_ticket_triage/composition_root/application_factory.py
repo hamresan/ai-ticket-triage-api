@@ -34,6 +34,7 @@ def build_application(settings: Settings) -> FastAPI:
 
     def clock() -> datetime:
         return datetime.now(UTC)
+
     ticket_use_cases = TicketUseCases(
         create=CreateTicket(repository, uuid4, clock),
         triage=TriageTicket(
