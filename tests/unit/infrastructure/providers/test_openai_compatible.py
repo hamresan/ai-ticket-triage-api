@@ -59,9 +59,7 @@ def test_openai_compatible_adapter_uses_shared_task_contract_and_mapping() -> No
         assert decision.priority is Priority.HIGH
         assert decision.sentiment is Sentiment.FRUSTRATED
         assert decision.needs_human_review is True
-        assert transport.requests == [
-            transport.requests[0]
-        ]
+        assert len(transport.requests) == 1
         assert transport.requests[0].model == "compatible-model"
         assert "Unexpected charge" in transport.requests[0].prompt
         assert "I was charged twice and need help." in transport.requests[0].prompt
