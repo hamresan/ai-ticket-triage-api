@@ -6,6 +6,8 @@ from uuid import uuid4
 from fastapi import FastAPI
 
 from ai_ticket_triage.application.tickets.use_cases import CreateTicket, GetTicket, ListTickets
+from ai_ticket_triage.application.triage.use_cases import TriageTicket
+from ai_ticket_triage.domain.triage.policies import DeterministicTriagePolicy, TriageSignalDetector
 from ai_ticket_triage.infrastructure.config import Settings
 from ai_ticket_triage.infrastructure.persistence.sqlalchemy.database import (
     create_engine,
@@ -14,6 +16,7 @@ from ai_ticket_triage.infrastructure.persistence.sqlalchemy.database import (
 from ai_ticket_triage.infrastructure.persistence.sqlalchemy.repositories import (
     SqlAlchemyTicketRepository,
 )
+from ai_ticket_triage.infrastructure.providers import FakeTriageProvider
 from ai_ticket_triage.presentation.dependencies import TicketUseCases
 from ai_ticket_triage.presentation.errors import register_error_handlers
 from ai_ticket_triage.presentation.middleware import RequestIdMiddleware
@@ -24,8 +27,15 @@ def build_application(settings: Settings) -> FastAPI:
     """Build the HTTP application from explicit dependencies."""
     engine = create_engine(settings.database_url)
     repository = SqlAlchemyTicketRepository(create_session_factory(engine))
+    clock = lambda: datetime.now(UTC)
     ticket_use_cases = TicketUseCases(
-        create=CreateTicket(repository, uuid4, lambda: datetime.now(UTC)),
+        create=CreateTicket(repository, uuid4, clock),
+        triage=TriageTicket(
+            repository=repository,
+            provider=FakeTriageProvider(),
+            fallback=DeterministicTriagePolicy(TriageSignalDetector.default()),
+            clock=clock,
+        ),
         get=GetTicket(repository),
         list=ListTickets(repository),
     )
