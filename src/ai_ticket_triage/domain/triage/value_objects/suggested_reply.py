@@ -1,6 +1,9 @@
 from dataclasses import dataclass
 
-from ai_ticket_triage.domain.triage.errors import EmptySuggestedReplyError, SuggestedReplyTooLongError
+from ai_ticket_triage.domain.triage.errors import (
+    EmptySuggestedReplyError,
+    SuggestedReplyTooLongError,
+)
 
 MAX_SUGGESTED_REPLY_LENGTH = 4_000
 
