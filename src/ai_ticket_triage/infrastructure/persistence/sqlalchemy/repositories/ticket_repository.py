@@ -19,6 +19,11 @@ class SqlAlchemyTicketRepository(TicketRepository):
             session.add(TicketMapper.to_model(ticket))
             await session.commit()
 
+    async def update(self, ticket: Ticket) -> None:
+        async with self._session_factory() as session:
+            await session.merge(TicketMapper.to_model(ticket))
+            await session.commit()
+
     async def get_by_id(self, ticket_id: UUID) -> Ticket | None:
         async with self._session_factory() as session:
             model = await session.get(TicketModel, ticket_id)
