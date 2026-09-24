@@ -1,16 +1,16 @@
 import pytest
-from pydantic import ValidationError
+from pydantic import SecretStr, ValidationError
 
 from ai_ticket_triage.infrastructure.config import ProviderName, Settings
 
 
 def test_provider_settings_are_typed() -> None:
     settings = Settings(
-        triage_provider="ollama",
+        triage_provider=ProviderName.OLLAMA,
         provider_model="model",
         provider_timeout_seconds=3.0,
         provider_base_url="http://localhost:11434",
-        provider_api_key="secret-placeholder",
+        provider_api_key=SecretStr("secret-placeholder"),
     )
 
     assert settings.triage_provider is ProviderName.OLLAMA
@@ -21,4 +21,4 @@ def test_provider_settings_are_typed() -> None:
 
 def test_unsupported_provider_configuration_is_rejected() -> None:
     with pytest.raises(ValidationError):
-        Settings(triage_provider="unsupported")
+        Settings.model_validate({"triage_provider": "unsupported"})
