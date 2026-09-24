@@ -3,8 +3,13 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-from ai_ticket_triage.domain.tickets import TicketStatus
-from ai_ticket_triage.domain.triage import Category, Priority, Sentiment, TriageProvenance
+from ai_ticket_triage.presentation.schemas.ticket_enums import (
+    CategoryResponse,
+    PriorityResponse,
+    ProvenanceResponse,
+    SentimentResponse,
+    TicketStatusResponse,
+)
 
 
 class CreateTicketRequest(BaseModel):
@@ -21,19 +26,19 @@ class CreateTicketRequest(BaseModel):
 
 
 class TriageDecisionResponse(BaseModel):
-    category: Category
-    priority: Priority
-    sentiment: Sentiment
+    category: CategoryResponse
+    priority: PriorityResponse
+    sentiment: SentimentResponse
     needs_human_review: bool
     suggested_reply: str
-    provenance: TriageProvenance
+    provenance: ProvenanceResponse
 
 
 class TicketResponse(BaseModel):
     id: UUID
     subject: str
     message: str
-    status: TicketStatus
+    status: TicketStatusResponse
     created_at: datetime
     updated_at: datetime
     decision: TriageDecisionResponse | None
