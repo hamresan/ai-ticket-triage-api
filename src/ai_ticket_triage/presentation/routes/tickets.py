@@ -17,11 +17,12 @@ def create_ticket_router(
     dependency: Callable[[], TicketUseCases],
 ) -> APIRouter:
     router = APIRouter(prefix="/api/v1/tickets", tags=["tickets"])
+    ticket_use_cases_dependency = Depends(dependency)
 
     @router.post("", response_model=TicketResponse, status_code=201)
     async def create_ticket(
         request_body: CreateTicketRequest,
-        use_cases: TicketUseCases = Depends(dependency),
+        use_cases: TicketUseCases = ticket_use_cases_dependency,
     ) -> TicketResponse:
         create_input = TicketPresentationMapper.to_create_input(request_body)
         ticket = await use_cases.create.execute(create_input)
@@ -31,7 +32,7 @@ def create_ticket_router(
     async def get_ticket(
         ticket_id: UUID,
         request: Request,
-        use_cases: TicketUseCases = Depends(dependency),
+        use_cases: TicketUseCases = ticket_use_cases_dependency,
     ) -> TicketResponse | JSONResponse:
         ticket = await use_cases.get.execute(ticket_id)
         if ticket is None:
@@ -47,7 +48,7 @@ def create_ticket_router(
     @router.get("", response_model=list[TicketResponse])
     async def list_tickets(
         status: TicketStatusQuery | None = None,
-        use_cases: TicketUseCases = Depends(dependency),
+        use_cases: TicketUseCases = ticket_use_cases_dependency,
     ) -> list[TicketResponse]:
         filters = TicketPresentationMapper.to_filter(status)
         tickets = await use_cases.list.execute(filters)
