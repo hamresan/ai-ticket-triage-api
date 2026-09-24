@@ -257,3 +257,10 @@ Contributions are welcome once the implementation is available. Keep changes foc
 ## License
 
 This project will be released under the [MIT License](./LICENSE).
+
+
+## Stage 4 provider configuration
+
+The default triage provider remains deterministic `fake`, so local development and CI require no model or network access. Stage 4 also supports the `ollama` provider through the existing `TriageProvider` contract.
+
+Ollama configuration uses `TRIAGE_PROVIDER=ollama`, `PROVIDER_MODEL=<model>`, `PROVIDER_BASE_URL=http://localhost:11434`, and optional `PROVIDER_TIMEOUT_SECONDS`. Provider responses are treated as untrusted structured data and must satisfy the versioned v1 triage contract. Malformed, invalid, oversized, timed-out, or failed provider responses are mapped to provider failures so the application can use deterministic fallback.
