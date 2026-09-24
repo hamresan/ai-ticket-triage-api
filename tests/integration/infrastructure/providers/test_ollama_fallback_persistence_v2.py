@@ -14,17 +14,17 @@ from ai_ticket_triage.application.triage.dto import TriageTicketInput
 from ai_ticket_triage.application.triage.use_cases import TriageTicket
 from ai_ticket_triage.domain.tickets import TicketStatus
 from ai_ticket_triage.domain.triage import Category, TriageProvenance
-from ai_ticket_triage.domain.triage.policies import DeterministicTriagePolicy, FallbackDecisionCatalog, TriageSignalDetector
-from ai_ticket_triage.infrastructure.persistence.sqlalchemy.database import create_engine, create_session_factory
-from ai_ticket_triage.infrastructure.persistence.sqlalchemy.repositories import SqlAlchemyTicketRepository
+from ai_ticket_triage.domain.triage.policies import (\n    DeterministicTriagePolicy,\n    FallbackDecisionCatalog,\n    TriageSignalDetector,\n)
+from ai_ticket_triage.infrastructure.persistence.sqlalchemy.database import (\n    create_engine,\n    create_session_factory,\n)
+from ai_ticket_triage.infrastructure.persistence.sqlalchemy.repositories import (\n    SqlAlchemyTicketRepository,\n)
 from ai_ticket_triage.infrastructure.providers.ollama import OllamaTriageProvider
-from ai_ticket_triage.infrastructure.providers.structured import StructuredTriageResponseMapper, TriagePromptBuilder
-from ai_ticket_triage.infrastructure.providers.structured.parser import StructuredTriageOutputParser
-from ai_ticket_triage.infrastructure.providers.structured.validator import StructuredTriageOutputValidator
+from ai_ticket_triage.infrastructure.providers.structured import (\n    StructuredTriageResponseMapper,\n    TriagePromptBuilder,\n)
+from ai_ticket_triage.infrastructure.providers.structured.parser import (\n    StructuredTriageOutputParser,\n)
+from ai_ticket_triage.infrastructure.providers.structured.validator import (\n    StructuredTriageOutputValidator,\n)
 from ai_ticket_triage.infrastructure.providers.transport import HttpxOllamaTransport
 
 
-def test_ollama_timeout_persists_fallback_decision_v2(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_ollama_timeout_persists_fallback_decision_v2(\n    tmp_path: Path, monkeypatch: pytest.MonkeyPatch\n) -> None:
     database_url = f"sqlite+aiosqlite:///{tmp_path / 'fallback-v2.db'}"
     monkeypatch.setenv("DATABASE_URL", database_url)
     command.upgrade(Config("alembic.ini"), "head")
@@ -33,7 +33,7 @@ def test_ollama_timeout_persists_fallback_decision_v2(tmp_path: Path, monkeypatc
         engine = create_engine(database_url)
         repository = SqlAlchemyTicketRepository(create_session_factory(engine))
         now = datetime(2026, 9, 24, 12, 0, tzinfo=UTC)
-        create = CreateTicket(repository, lambda: UUID("00000000-0000-0000-0000-000000000403"), lambda: now)
+        ticket_id = UUID("00000000-0000-0000-0000-000000000403")\n        create = CreateTicket(repository, lambda: ticket_id, lambda: now)
 
         def timeout_handler(request: httpx.Request) -> httpx.Response:
             raise httpx.ReadTimeout("scripted timeout", request=request)
@@ -53,10 +53,10 @@ def test_ollama_timeout_persists_fallback_decision_v2(tmp_path: Path, monkeypatc
         triage = TriageTicket(
             repository,
             provider,
-            DeterministicTriagePolicy(TriageSignalDetector.default(), FallbackDecisionCatalog.default()),
+            DeterministicTriagePolicy(\n                TriageSignalDetector.default(), FallbackDecisionCatalog.default()\n            ),
             lambda: now + timedelta(seconds=1),
         )
-        created = await create.execute(CreateTicketInput(subject="Refund request", message="Please refund my order."))
+        created = await create.execute(\n            CreateTicketInput(\n                subject="Refund request", message="Please refund my order."\n            )\n        )
         result = await triage.execute(TriageTicketInput(created.id))
         persisted = await repository.get_by_id(created.id)
 
