@@ -13,7 +13,12 @@ class TriageSignalDetector:
             signals={
                 Category.REFUND: ("refund", "money back", "charged twice", "duplicate charge"),
                 Category.BILLING: ("billing", "invoice", "payment due", "card payment"),
-                Category.ACCOUNT_ACCESS: ("locked out", "cannot log in", "can't log in", "password reset"),
+                Category.ACCOUNT_ACCESS: (
+                    "locked out",
+                    "cannot log in",
+                    "can't log in",
+                    "password reset",
+                ),
                 Category.TECHNICAL: ("error", "bug", "not working", "technical"),
                 Category.ABUSIVE: ("idiot", "stupid", "useless", "hate you"),
             }
