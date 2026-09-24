@@ -24,3 +24,4 @@ class Settings(BaseSettings):
 
     app_name: str = "AI Support Ticket Triage API"
     app_env: AppEnvironment = AppEnvironment.LOCAL
+    database_url: str = "sqlite+aiosqlite:///./ai_ticket_triage.db"

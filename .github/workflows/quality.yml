@@ -15,7 +15,7 @@ jobs:
         with:
           python-version: "3.12"
           enable-cache: true
-      - run: uv sync
+      - run: uv sync --locked
       - run: make check
       - name: Smoke test application startup
         run: |
