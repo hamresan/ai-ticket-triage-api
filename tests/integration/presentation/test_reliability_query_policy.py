@@ -69,9 +69,7 @@ def test_concurrent_duplicate_requests_create_one_ticket(
 
     async def exercise() -> None:
         transport = httpx.ASGITransport(app=application)
-        async with httpx.AsyncClient(
-            transport=transport, base_url="http://test"
-        ) as client:
+        async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
             first, second = await asyncio.gather(
                 client.post("/api/v1/tickets", json=payload, headers=headers),
                 client.post("/api/v1/tickets", json=payload, headers=headers),
