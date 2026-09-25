@@ -16,9 +16,7 @@ def test_health_endpoint_returns_ok() -> None:
 
     async def exercise() -> None:
         transport = httpx.ASGITransport(app=application)
-        async with httpx.AsyncClient(
-            transport=transport, base_url="http://test"
-        ) as client:
+        async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
             response = await client.get("/health")
 
         assert response.status_code == 200
@@ -40,9 +38,7 @@ def test_public_application_factory_builds_runnable_app() -> None:
 
     async def exercise() -> None:
         transport = httpx.ASGITransport(app=application)
-        async with httpx.AsyncClient(
-            transport=transport, base_url="http://test"
-        ) as client:
+        async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
             response = await client.get("/health")
 
         assert response.status_code == 200
