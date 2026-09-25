@@ -29,3 +29,84 @@ jobs:
             sleep 0.5
           done
           exit 1
+
+  clean-clone:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          clean: true
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+          enable-cache: false
+      - name: Install exactly from lockfile
+        run: uv sync --locked
+      - name: Verify fresh-database migrations
+        run: |
+          test "$(uv run alembic heads | wc -l)" -eq 1
+          uv run alembic upgrade head
+      - name: Verify documented Fake-provider walkthrough
+        run: |
+          uv run uvicorn ai_ticket_triage.presentation.app:create_app --factory --host 127.0.0.1 --port 8000 &
+          server_pid=$!
+          trap 'kill "$server_pid"' EXIT
+          for attempt in {1..20}; do
+            if curl --fail --silent http://127.0.0.1:8000/health; then
+              break
+            fi
+            sleep 0.5
+          done
+          curl --fail --silent --request POST http://127.0.0.1:8000/api/v1/tickets \
+            --header 'Content-Type: application/json' \
+            --header 'Idempotency-Key: clean-clone-ticket' \
+            --data '{"subject":"Cannot sign in","message":"The login page keeps returning an error."}' \
+            --output /tmp/ticket.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          ticket = json.loads(Path("/tmp/ticket.json").read_text())
+          assert ticket["status"] == "triaged"
+          assert ticket["decision"]["provenance"] == "provider"
+          PY
+          curl --fail --silent 'http://127.0.0.1:8000/api/v1/tickets?status=triaged&limit=50' \
+            --output /tmp/tickets.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          tickets = json.loads(Path("/tmp/tickets.json").read_text())
+          assert len(tickets) == 1
+          PY
+
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build release image
+        run: docker build --tag ai-ticket-triage:ci .
+      - name: Run migrations and smoke test image
+        run: |
+          docker run --detach --name ai-ticket-triage-ci --publish 8000:8000 \
+            ai-ticket-triage:ci \
+            sh -c 'alembic upgrade head && exec uvicorn ai_ticket_triage.presentation.app:create_app --factory --host 0.0.0.0 --port 8000'
+          trap 'docker rm --force ai-ticket-triage-ci >/dev/null 2>&1 || true' EXIT
+          for attempt in {1..30}; do
+            if curl --fail --silent http://127.0.0.1:8000/health; then
+              break
+            fi
+            sleep 1
+          done
+          curl --fail --silent --request POST http://127.0.0.1:8000/api/v1/tickets \
+            --header 'Content-Type: application/json' \
+            --header 'Idempotency-Key: docker-ticket' \
+            --data '{"subject":"Container smoke test","message":"Verify the release image."}' \
+            --output /tmp/docker-ticket.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          ticket = json.loads(Path("/tmp/docker-ticket.json").read_text())
+          assert ticket["status"] == "triaged"
+          PY
