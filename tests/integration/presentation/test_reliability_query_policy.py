@@ -172,4 +172,3 @@ def test_structured_logs_include_safe_metadata_without_sensitive_content(
     assert event["model"] is None
     assert event["fallback_used"] is False
     assert event["duration_ms"] >= 0
-
