@@ -70,7 +70,8 @@ def test_concurrent_duplicate_requests_create_one_ticket(
         return client.post("/api/v1/tickets", json=payload, headers=headers).status_code
 
     with ThreadPoolExecutor(max_workers=2) as executor:
-        statuses = list(executor.map(lambda _: create(), range(2)))
+        futures = [executor.submit(create), executor.submit(create)]
+        statuses = [future.result() for future in futures]
 
     assert sorted(statuses) == [200, 201]
     listed = client.get("/api/v1/tickets")
