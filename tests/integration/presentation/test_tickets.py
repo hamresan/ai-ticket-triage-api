@@ -1,24 +1,8 @@
 from pathlib import Path
-from typing import cast
 
-import httpx
 import pytest
-from alembic import command
-from alembic.config import Config
-from starlette.testclient import TestClient
 
-from ai_ticket_triage.composition_root import build_application
-from ai_ticket_triage.infrastructure.config import AppEnvironment, Settings
-
-
-def build_client(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> httpx.Client:
-    database_url = f"sqlite+aiosqlite:///{tmp_path / 'api.db'}"
-    monkeypatch.setenv("DATABASE_URL", database_url)
-    command.upgrade(Config("alembic.ini"), "head")
-    application = build_application(
-        Settings(app_env=AppEnvironment.TEST, database_url=database_url)
-    )
-    return cast(httpx.Client, TestClient(application))
+from tests.integration.presentation.support import build_client
 
 
 def test_create_retrieve_and_filter_ticket(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -26,6 +10,7 @@ def test_create_retrieve_and_filter_ticket(tmp_path: Path, monkeypatch: pytest.M
     response = client.post(
         "/api/v1/tickets",
         json={"subject": "Refund", "message": "Please refund my order."},
+        headers={"Idempotency-Key": "create-retrieve-filter"},
     )
     assert response.status_code == 201
     created = response.json()
@@ -47,7 +32,11 @@ def test_invalid_request_uses_stable_error_envelope(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     client = build_client(tmp_path, monkeypatch)
-    response = client.post("/api/v1/tickets", json={"subject": " ", "message": "message"})
+    response = client.post(
+        "/api/v1/tickets",
+        json={"subject": " ", "message": "message"},
+        headers={"Idempotency-Key": "invalid-request"},
+    )
     assert response.status_code == 422
     body = response.json()
     assert body["error"] == {

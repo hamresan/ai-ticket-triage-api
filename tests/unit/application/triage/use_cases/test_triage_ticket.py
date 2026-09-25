@@ -6,6 +6,7 @@ import pytest
 
 from ai_ticket_triage.application.tickets.dto import CreateTicketInput
 from ai_ticket_triage.application.tickets.errors import TicketNotFoundError
+from ai_ticket_triage.application.tickets.policies import TicketRequestFingerprint
 from ai_ticket_triage.application.tickets.use_cases import CreateTicket
 from ai_ticket_triage.application.triage.dto import TriageTicketInput
 from ai_ticket_triage.application.triage.use_cases import TriageTicket
@@ -107,7 +108,9 @@ def test_provider_runs_after_create_write_boundary_is_closed() -> None:
         repository = TransactionTrackingTicketRepository()
         created_at = datetime(2026, 9, 24, 12, 0, tzinfo=UTC)
         ticket_id = UUID("00000000-0000-0000-0000-000000000305")
-        create = CreateTicket(repository, lambda: ticket_id, lambda: created_at)
+        create = CreateTicket(
+            repository, lambda: ticket_id, lambda: created_at, TicketRequestFingerprint()
+        )
         provider = TransactionAwareTriageProvider(repository)
         triage = TriageTicket(
             repository,
@@ -118,8 +121,12 @@ def test_provider_runs_after_create_write_boundary_is_closed() -> None:
             lambda: created_at + timedelta(seconds=1),
         )
 
-        ticket = await create.execute(CreateTicketInput(subject="Error", message="Not working."))
-        await triage.execute(TriageTicketInput(ticket.id))
+        creation = await create.execute(
+            CreateTicketInput(
+                subject="Error", message="Not working.", idempotency_key="transaction-test"
+            )
+        )
+        await triage.execute(TriageTicketInput(creation.ticket.id))
 
         assert provider.called_outside_write is True
         assert repository.write_in_progress is False

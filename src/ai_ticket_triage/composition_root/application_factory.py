@@ -5,6 +5,7 @@ from uuid import uuid4
 
 from fastapi import FastAPI
 
+from ai_ticket_triage.application.tickets.policies import TicketRequestFingerprint
 from ai_ticket_triage.application.tickets.use_cases import CreateTicket, GetTicket, ListTickets
 from ai_ticket_triage.application.triage.use_cases import TriageTicket
 from ai_ticket_triage.domain.triage.policies import (
@@ -23,7 +24,10 @@ from ai_ticket_triage.infrastructure.persistence.sqlalchemy.repositories import 
 from ai_ticket_triage.infrastructure.providers import TriageProviderFactory
 from ai_ticket_triage.presentation.dependencies import TicketUseCases
 from ai_ticket_triage.presentation.errors import register_error_handlers
-from ai_ticket_triage.presentation.middleware import RequestIdMiddleware
+from ai_ticket_triage.presentation.middleware import (
+    ObservabilityMiddleware,
+    RequestIdMiddleware,
+)
 from ai_ticket_triage.presentation.routes import create_ticket_router, health_router
 
 
@@ -38,7 +42,7 @@ def build_application(settings: Settings) -> FastAPI:
     provider = TriageProviderFactory().create(settings)
 
     ticket_use_cases = TicketUseCases(
-        create=CreateTicket(repository, uuid4, clock),
+        create=CreateTicket(repository, uuid4, clock, TicketRequestFingerprint()),
         triage=TriageTicket(
             repository=repository,
             provider=provider,
@@ -56,6 +60,11 @@ def build_application(settings: Settings) -> FastAPI:
 
     application = FastAPI(title=settings.app_name)
     application.state.engine = engine
+    application.add_middleware(
+        ObservabilityMiddleware,
+        provider=settings.triage_provider.value,
+        model=settings.provider_model,
+    )
     application.add_middleware(RequestIdMiddleware)
     register_error_handlers(application)
     application.include_router(health_router)

@@ -9,6 +9,7 @@ from alembic.config import Config
 from sqlalchemy.exc import IntegrityError
 
 from ai_ticket_triage.application.tickets.dto.ticket_query import TicketFilter
+from ai_ticket_triage.application.tickets.errors import IdempotencyConflictError
 from ai_ticket_triage.domain.tickets import Ticket, TicketStatus
 from ai_ticket_triage.domain.tickets.value_objects import TicketMessage, TicketSubject
 from ai_ticket_triage.domain.triage import (
@@ -148,6 +149,63 @@ def test_database_rejects_triaged_status_without_decision(
             )
             with pytest.raises(IntegrityError):
                 await session.commit()
+        await engine.dispose()
+
+    asyncio.run(exercise())
+
+
+def test_repository_enforces_idempotency_for_sequential_and_concurrent_writes(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    database_url = f"sqlite+aiosqlite:///{tmp_path / 'idempotency.db'}"
+    migrate(database_url, monkeypatch)
+
+    async def exercise() -> None:
+        engine = create_engine(database_url)
+        repository = SqlAlchemyTicketRepository(create_session_factory(engine))
+        now = datetime(2026, 9, 25, 8, 0, tzinfo=UTC)
+
+        def ticket(ticket_id: str) -> Ticket:
+            return Ticket(
+                id=UUID(ticket_id),
+                subject=TicketSubject("Same request"),
+                message=TicketMessage("Same body"),
+                status=TicketStatus.NEW,
+                created_at=now,
+                updated_at=now,
+            )
+
+        first_ticket = ticket("00000000-0000-0000-0000-000000000601")
+        replay_ticket = ticket("00000000-0000-0000-0000-000000000602")
+        first = await repository.add_idempotent(first_ticket, "same-key", "fingerprint")
+        replay = await repository.add_idempotent(replay_ticket, "same-key", "fingerprint")
+
+        assert first.created is True
+        assert replay.created is False
+        assert replay.ticket.id == first.ticket.id
+
+        with pytest.raises(IdempotencyConflictError):
+            await repository.add_idempotent(
+                ticket("00000000-0000-0000-0000-000000000603"),
+                "same-key",
+                "different-fingerprint",
+            )
+
+        concurrent = await asyncio.gather(
+            repository.add_idempotent(
+                ticket("00000000-0000-0000-0000-000000000604"),
+                "concurrent-key",
+                "concurrent-fingerprint",
+            ),
+            repository.add_idempotent(
+                ticket("00000000-0000-0000-0000-000000000605"),
+                "concurrent-key",
+                "concurrent-fingerprint",
+            ),
+        )
+        assert sorted(result.created for result in concurrent) == [False, True]
+        assert concurrent[0].ticket.id == concurrent[1].ticket.id
+        assert len(await repository.list(TicketFilter())) == 2
         await engine.dispose()
 
     asyncio.run(exercise())

@@ -2,7 +2,7 @@
 
 > A reliable FastAPI workflow that turns incoming support tickets into validated, structured triage decisions—with deterministic fallbacks when an AI provider is unavailable.
 
-**Status:** Under active development. Stage 5 supports deterministic Fake, Ollama, and OpenAI-compatible triage providers behind the same validated application contract.
+**Status:** Under active development. Stage 6 adds idempotent ticket creation, deterministic query semantics, centralized safe API errors, and lightweight structured observability.
 
 ## The problem
 
@@ -257,6 +257,14 @@ Contributions are welcome once the implementation is available. Keep changes foc
 
 This project will be released under the [MIT License](./LICENSE).
 
+
+## Stage 6 reliability and query policy
+
+Ticket creation requires a caller-supplied `Idempotency-Key` header (1–255 characters). The first accepted request creates and triages the ticket and returns `201`. Replaying the same key with the same subject and message returns the already persisted ticket with `200` and does not repeat triage. Reusing the key with a different payload returns `409 idempotency_conflict`. A database primary-key constraint on the idempotency record is part of the invariant, including concurrent requests.
+
+`GET /api/v1/tickets` supports `status`, `category`, `priority`, and `needs_human_review` filters. Results are ordered deterministically by creation time and ticket ID. Pagination uses `offset` (minimum 0, default 0) and `limit` (1–100, default 50). Invalid query values use the stable validation-error envelope.
+
+Expected API errors use a centralized envelope containing a stable error code/message and the request ID. The same request ID is returned in `X-Request-ID`. Lightweight request logs contain only safe operational metadata such as request ID, ticket ID when available, configured provider/model, duration, fallback usage, and status code. Ticket subject/message, prompts, credentials, idempotency keys, raw provider output, and internal database/provider details are intentionally excluded.
 
 ## Provider configuration
 
