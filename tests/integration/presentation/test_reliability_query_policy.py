@@ -1,11 +1,12 @@
+import asyncio
 import json
 import logging
-from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
+import httpx
 import pytest
 
-from tests.integration.presentation.support import build_client
+from tests.integration.presentation.support import build_client, build_test_application
 
 
 def test_sequential_idempotent_replay_does_not_repeat_triage(
@@ -62,20 +63,24 @@ def test_idempotency_key_is_required(tmp_path: Path, monkeypatch: pytest.MonkeyP
 def test_concurrent_duplicate_requests_create_one_ticket(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    client = build_client(tmp_path, monkeypatch)
+    application = build_test_application(tmp_path, monkeypatch)
     payload = {"subject": "Concurrent", "message": "Only one ticket should exist."}
     headers = {"Idempotency-Key": "concurrent-key"}
 
-    def create() -> int:
-        return client.post("/api/v1/tickets", json=payload, headers=headers).status_code
+    async def exercise() -> None:
+        transport = httpx.ASGITransport(app=application)
+        async with httpx.AsyncClient(
+            transport=transport, base_url="http://test"
+        ) as client:
+            first, second = await asyncio.gather(
+                client.post("/api/v1/tickets", json=payload, headers=headers),
+                client.post("/api/v1/tickets", json=payload, headers=headers),
+            )
+            assert sorted((first.status_code, second.status_code)) == [200, 201]
+            listed = await client.get("/api/v1/tickets")
+            assert len(listed.json()) == 1
 
-    with ThreadPoolExecutor(max_workers=2) as executor:
-        futures = [executor.submit(create), executor.submit(create)]
-        statuses = [future.result() for future in futures]
-
-    assert sorted(statuses) == [200, 201]
-    listed = client.get("/api/v1/tickets")
-    assert len(listed.json()) == 1
+    asyncio.run(exercise())
 
 
 def test_filters_ordering_and_pagination_are_deterministic(
