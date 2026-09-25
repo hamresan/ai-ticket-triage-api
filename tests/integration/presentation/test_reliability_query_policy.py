@@ -135,8 +135,8 @@ def test_structured_logs_include_safe_metadata_without_sensitive_content(
     monkeypatch: pytest.MonkeyPatch,
     caplog: pytest.LogCaptureFixture,
 ) -> None:
-    caplog.set_level(logging.INFO, logger="ai_ticket_triage.request")
     client = build_client(tmp_path, monkeypatch)
+    caplog.set_level(logging.INFO, logger="ai_ticket_triage.request")
     sensitive_subject = "PRIVATE-SUBJECT-7788"
     sensitive_message = "PRIVATE-MESSAGE-9911"
     secret_key = "PRIVATE-IDEMPOTENCY-KEY"
