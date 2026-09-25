@@ -6,18 +6,19 @@ from time import perf_counter
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import Response
+from starlette.types import ASGIApp
 
 
 class ObservabilityMiddleware(BaseHTTPMiddleware):
     def __init__(
         self,
-        app: object,
+        app: ASGIApp,
         *,
         provider: str,
         model: str | None,
         logger: logging.Logger | None = None,
     ) -> None:
-        super().__init__(app)  # type: ignore[arg-type]
+        super().__init__(app)
         self._provider = provider
         self._model = model
         self._logger = logger or logging.getLogger("ai_ticket_triage.request")
