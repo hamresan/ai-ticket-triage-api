@@ -6,14 +6,14 @@ from ai_ticket_triage.infrastructure.config import ProviderName, Settings
 
 def test_provider_settings_are_typed() -> None:
     settings = Settings(
-        triage_provider=ProviderName.OLLAMA,
+        triage_provider=ProviderName.OPENAI_COMPATIBLE,
         provider_model="model",
         provider_timeout_seconds=3.0,
-        provider_base_url="http://localhost:11434",
+        provider_base_url="https://provider.test/v1",
         provider_api_key=SecretStr("secret-placeholder"),
     )
 
-    assert settings.triage_provider is ProviderName.OLLAMA
+    assert settings.triage_provider is ProviderName.OPENAI_COMPATIBLE
     assert settings.provider_timeout_seconds == 3.0
     assert settings.provider_api_key is not None
     assert str(settings.provider_api_key) == "**********"
