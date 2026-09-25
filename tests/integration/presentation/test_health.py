@@ -1,9 +1,8 @@
 """Integration tests for the real FastAPI application and health endpoint."""
 
-from typing import cast
+import asyncio
 
 import httpx
-from starlette.testclient import TestClient
 
 from ai_ticket_triage.composition_root import build_application
 from ai_ticket_triage.infrastructure.config import AppEnvironment, Settings
@@ -11,16 +10,21 @@ from ai_ticket_triage.presentation.app import create_app
 
 
 def test_health_endpoint_returns_ok() -> None:
-    settings = Settings(app_name="Test Triage API", app_env=AppEnvironment.TEST)
-    client = cast(httpx.Client, TestClient(build_application(settings)))
+    application = build_application(
+        Settings(app_name="Test Triage API", app_env=AppEnvironment.TEST)
+    )
 
-    try:
-        response = client.get("/health")
-    finally:
-        client.close()
+    async def exercise() -> None:
+        transport = httpx.ASGITransport(app=application)
+        async with httpx.AsyncClient(
+            transport=transport, base_url="http://test"
+        ) as client:
+            response = await client.get("/health")
 
-    assert response.status_code == 200
-    assert response.json() == {"status": "ok"}
+        assert response.status_code == 200
+        assert response.json() == {"status": "ok"}
+
+    asyncio.run(exercise())
 
 
 def test_application_uses_configured_title() -> None:
@@ -32,11 +36,15 @@ def test_application_uses_configured_title() -> None:
 
 
 def test_public_application_factory_builds_runnable_app() -> None:
-    client = cast(httpx.Client, TestClient(create_app()))
+    application = create_app()
 
-    try:
-        response = client.get("/health")
-    finally:
-        client.close()
+    async def exercise() -> None:
+        transport = httpx.ASGITransport(app=application)
+        async with httpx.AsyncClient(
+            transport=transport, base_url="http://test"
+        ) as client:
+            response = await client.get("/health")
 
-    assert response.status_code == 200
+        assert response.status_code == 200
+
+    asyncio.run(exercise())
