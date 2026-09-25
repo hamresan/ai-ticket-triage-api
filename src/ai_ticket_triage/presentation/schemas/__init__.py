@@ -1,3 +1,4 @@
+from ai_ticket_triage.presentation.schemas.errors import ErrorDetailResponse, ErrorResponse
 from ai_ticket_triage.presentation.schemas.ticket_enums import (
     CategoryResponse,
     PriorityResponse,
@@ -18,6 +19,8 @@ from ai_ticket_triage.presentation.schemas.tickets import (
 
 __all__ = [
     "CategoryQuery",
+    "ErrorDetailResponse",
+    "ErrorResponse",
     "CategoryResponse",
     "CreateTicketRequest",
     "PriorityQuery",
