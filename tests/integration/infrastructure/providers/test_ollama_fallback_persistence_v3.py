@@ -9,6 +9,7 @@ from alembic import command
 from alembic.config import Config
 
 from ai_ticket_triage.application.tickets.dto import CreateTicketInput
+from ai_ticket_triage.application.tickets.policies import TicketRequestFingerprint
 from ai_ticket_triage.application.tickets.use_cases import CreateTicket
 from ai_ticket_triage.application.triage.dto import TriageTicketInput
 from ai_ticket_triage.application.triage.use_cases import TriageTicket
@@ -52,7 +53,9 @@ def test_ollama_timeout_persists_fallback_decision(
         repository = SqlAlchemyTicketRepository(create_session_factory(engine))
         now = datetime(2026, 9, 24, 12, 0, tzinfo=UTC)
         ticket_id = UUID("00000000-0000-0000-0000-000000000403")
-        create = CreateTicket(repository, lambda: ticket_id, lambda: now)
+        create = CreateTicket(
+            repository, lambda: ticket_id, lambda: now, TicketRequestFingerprint()
+        )
 
         def timeout_handler(request: httpx.Request) -> httpx.Response:
             raise httpx.ReadTimeout("scripted timeout", request=request)
@@ -77,11 +80,15 @@ def test_ollama_timeout_persists_fallback_decision(
             ),
             lambda: now + timedelta(seconds=1),
         )
-        created = await create.execute(
-            CreateTicketInput(subject="Refund request", message="Please refund my order.")
+        creation = await create.execute(
+            CreateTicketInput(
+                subject="Refund request",
+                message="Please refund my order.",
+                idempotency_key="ollama-fallback",
+            )
         )
-        result = await triage.execute(TriageTicketInput(created.id))
-        persisted = await repository.get_by_id(created.id)
+        result = await triage.execute(TriageTicketInput(creation.ticket.id))
+        persisted = await repository.get_by_id(creation.ticket.id)
 
         assert result.status is TicketStatus.TRIAGED
         assert result.decision is not None
