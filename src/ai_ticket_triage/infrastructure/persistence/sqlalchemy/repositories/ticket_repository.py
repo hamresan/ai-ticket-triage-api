@@ -40,19 +40,19 @@ class SqlAlchemyTicketRepository(TicketRepository):
             try:
                 await session.commit()
                 return TicketCreationResult(ticket=ticket, created=True)
-            except IntegrityError as error:
+            except IntegrityError:
                 await session.rollback()
-
-        async with self._session_factory() as session:
-            record = await session.get(IdempotencyRecordModel, idempotency_key)
-            if record is None:
-                raise error
-            if record.fingerprint != fingerprint:
-                raise IdempotencyConflictError
-            model = await session.get(TicketModel, record.ticket_id)
-            if model is None:
-                raise RuntimeError("Idempotency record references a missing ticket.")
-            return TicketCreationResult(ticket=TicketMapper.to_domain(model), created=False)
+                record = await session.get(IdempotencyRecordModel, idempotency_key)
+                if record is None:
+                    raise
+                if record.fingerprint != fingerprint:
+                    raise IdempotencyConflictError
+                model = await session.get(TicketModel, record.ticket_id)
+                if model is None:
+                    raise RuntimeError("Idempotency record references a missing ticket.")
+                return TicketCreationResult(
+                    ticket=TicketMapper.to_domain(model), created=False
+                )
 
     async def update(self, ticket: Ticket) -> None:
         async with self._session_factory() as session:
