@@ -1,27 +1,27 @@
-from uuid import UUID
-
-from ai_ticket_triage.application.tickets.dto.ticket_query import TicketFilter
-from ai_ticket_triage.application.tickets.ports import TicketRepository
+from ai_ticket_triage.application.tickets.dto import TicketCreationResult
 from ai_ticket_triage.domain.tickets import Ticket
+from tests.unit.application.support.in_memory_ticket_repository import InMemoryTicketRepository
 
 
-class TransactionTrackingTicketRepository(TicketRepository):
+class TransactionTrackingTicketRepository(InMemoryTicketRepository):
     def __init__(self) -> None:
-        self.tickets: dict[UUID, Ticket] = {}
+        super().__init__()
         self.write_in_progress = False
 
     async def add(self, ticket: Ticket) -> None:
         self.write_in_progress = True
-        self.tickets[ticket.id] = ticket
+        await super().add(ticket)
         self.write_in_progress = False
+
+    async def add_idempotent(
+        self, ticket: Ticket, idempotency_key: str, fingerprint: str
+    ) -> TicketCreationResult:
+        self.write_in_progress = True
+        result = await super().add_idempotent(ticket, idempotency_key, fingerprint)
+        self.write_in_progress = False
+        return result
 
     async def update(self, ticket: Ticket) -> None:
         self.write_in_progress = True
-        self.tickets[ticket.id] = ticket
+        await super().update(ticket)
         self.write_in_progress = False
-
-    async def get_by_id(self, ticket_id: UUID) -> Ticket | None:
-        return self.tickets.get(ticket_id)
-
-    async def list(self, filters: TicketFilter) -> tuple[Ticket, ...]:
-        return tuple(self.tickets.values())
