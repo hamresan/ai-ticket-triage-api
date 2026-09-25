@@ -40,13 +40,13 @@ class SqlAlchemyTicketRepository(TicketRepository):
             try:
                 await session.commit()
                 return TicketCreationResult(ticket=ticket, created=True)
-            except IntegrityError:
+            except IntegrityError as error:
                 await session.rollback()
 
         async with self._session_factory() as session:
             record = await session.get(IdempotencyRecordModel, idempotency_key)
             if record is None:
-                raise
+                raise error
             if record.fingerprint != fingerprint:
                 raise IdempotencyConflictError
             model = await session.get(TicketModel, record.ticket_id)
