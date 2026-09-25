@@ -19,9 +19,7 @@ from ai_ticket_triage.presentation.schemas import (
 
 class TicketPresentationMapper:
     @staticmethod
-    def to_create_input(
-        request: CreateTicketRequest, idempotency_key: str
-    ) -> CreateTicketInput:
+    def to_create_input(request: CreateTicketRequest, idempotency_key: str) -> CreateTicketInput:
         return CreateTicketInput(
             subject=request.subject,
             message=request.message,
