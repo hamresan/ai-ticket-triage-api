@@ -108,7 +108,9 @@ def test_provider_runs_after_create_write_boundary_is_closed() -> None:
         repository = TransactionTrackingTicketRepository()
         created_at = datetime(2026, 9, 24, 12, 0, tzinfo=UTC)
         ticket_id = UUID("00000000-0000-0000-0000-000000000305")
-        create = CreateTicket(\n            repository, lambda: ticket_id, lambda: created_at, TicketRequestFingerprint()\n        )
+        create = CreateTicket(
+            repository, lambda: ticket_id, lambda: created_at, TicketRequestFingerprint()
+        )
         provider = TransactionAwareTriageProvider(repository)
         triage = TriageTicket(
             repository,
@@ -119,7 +121,12 @@ def test_provider_runs_after_create_write_boundary_is_closed() -> None:
             lambda: created_at + timedelta(seconds=1),
         )
 
-        creation = await create.execute(\n            CreateTicketInput(\n                subject="Error", message="Not working.", idempotency_key="transaction-test"\n            )\n        )\n        await triage.execute(TriageTicketInput(creation.ticket.id))
+        creation = await create.execute(
+            CreateTicketInput(
+                subject="Error", message="Not working.", idempotency_key="transaction-test"
+            )
+        )
+        await triage.execute(TriageTicketInput(creation.ticket.id))
 
         assert provider.called_outside_write is True
         assert repository.write_in_progress is False
