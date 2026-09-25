@@ -33,9 +33,7 @@ def create_ticket_router(
         ],
         use_cases: TicketUseCases = ticket_use_cases_dependency,
     ) -> TicketResponse:
-        create_input = TicketPresentationMapper.to_create_input(
-            request_body, idempotency_key
-        )
+        create_input = TicketPresentationMapper.to_create_input(request_body, idempotency_key)
         creation = await use_cases.create.execute(create_input)
         ticket = creation.ticket
         if creation.created:
