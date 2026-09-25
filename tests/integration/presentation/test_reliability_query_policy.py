@@ -138,6 +138,7 @@ def test_structured_logs_include_safe_metadata_without_sensitive_content(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    monkeypatch.delenv("PROVIDER_MODEL", raising=False)
     client = build_client(tmp_path, monkeypatch)
     logger = logging.getLogger("ai_ticket_triage.request")
     logger.disabled = False

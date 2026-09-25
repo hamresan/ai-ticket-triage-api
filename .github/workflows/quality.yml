@@ -110,3 +110,31 @@ jobs:
           ticket = json.loads(Path("/tmp/docker-ticket.json").read_text())
           assert ticket["status"] == "triaged"
           PY
+
+  compose:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate Compose configuration
+        run: docker compose config --quiet
+      - name: Start Compose stack
+        run: docker compose up --build --detach --wait
+      - name: Verify Compose API
+        run: |
+          curl --fail --silent http://127.0.0.1:8000/health
+          curl --fail --silent --request POST http://127.0.0.1:8000/api/v1/tickets \
+            --header 'Content-Type: application/json' \
+            --header 'Idempotency-Key: compose-ticket' \
+            --data '{"subject":"Compose smoke test","message":"Verify the Compose workflow."}' \
+            --output /tmp/compose-ticket.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          ticket = json.loads(Path("/tmp/compose-ticket.json").read_text())
+          assert ticket["status"] == "triaged"
+          assert ticket["decision"]["provenance"] == "provider"
+          PY
+      - name: Stop Compose stack
+        if: always()
+        run: docker compose down --volumes

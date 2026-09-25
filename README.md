@@ -191,7 +191,37 @@ All providers feed the same versioned triage task and strict structured-output v
 
 ## Docker
 
-The repository includes a tested application image. It intentionally keeps the release container path on SQLite; no PostgreSQL Compose setup is advertised because a Compose/PostgreSQL path is not currently shipped and CI-verified.
+The repository includes a tested application image and a Docker Compose configuration using SQLite + the Fake provider. No PostgreSQL Compose setup is advertised because a PostgreSQL path is not currently shipped and CI-verified.
+
+### Docker Compose
+
+Start the complete local stack:
+
+```bash
+docker compose up --build
+```
+
+The Compose service runs Alembic migrations before starting the API, publishes port `8000`, persists SQLite data in the `ticket_data` named volume, and includes an application health check. No external AI service or credential is required.
+
+Verify it:
+
+```bash
+curl --fail http://127.0.0.1:8000/health
+```
+
+Stop the service while keeping its data:
+
+```bash
+docker compose down
+```
+
+Remove the service and its persisted local database:
+
+```bash
+docker compose down --volumes
+```
+
+### Docker image
 
 Build:
 
@@ -208,7 +238,7 @@ docker run --rm --name ai-ticket-triage \
   sh -c 'alembic upgrade head && exec uvicorn ai_ticket_triage.presentation.app:create_app --factory --host 0.0.0.0 --port 8000'
 ```
 
-Then use the same health/create/query commands shown above. Container data is ephemeral unless you provide persistent storage and an appropriate `DATABASE_URL`.
+Then use the same health/create/query commands shown above. Direct `docker run` data is ephemeral unless you provide persistent storage and an appropriate `DATABASE_URL`; the Compose configuration already provides a persistent SQLite volume.
 
 ## Development checks
 

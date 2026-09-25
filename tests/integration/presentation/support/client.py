@@ -16,7 +16,12 @@ def build_test_application(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> F
     database_url = f"sqlite+aiosqlite:///{tmp_path / 'api.db'}"
     monkeypatch.setenv("DATABASE_URL", database_url)
     command.upgrade(Config("alembic.ini"), "head")
-    return build_application(Settings(app_env=AppEnvironment.TEST, database_url=database_url))
+    settings = Settings(
+        app_env=AppEnvironment.TEST,
+        database_url=database_url,
+        provider_model=None,
+    )
+    return build_application(settings)
 
 
 def build_client(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> httpx.Client:

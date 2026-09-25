@@ -1,4 +1,4 @@
-.PHONY: check lint format-check type-check test run
+.PHONY: check lint format-check type-check test run up down logs migrate
 
 check: lint format-check type-check test
 
@@ -16,3 +16,15 @@ test:
 
 run:
 	uv run uvicorn ai_ticket_triage.presentation.app:create_app --factory
+
+up:
+	docker compose up --build --detach
+
+down:
+	docker compose down
+
+logs:
+	docker compose logs --follow api
+
+migrate:
+	docker compose run --rm api alembic upgrade head
