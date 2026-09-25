@@ -6,7 +6,11 @@ from pathlib import Path
 import httpx
 import pytest
 
-from tests.integration.presentation.support import build_client, build_test_application
+from tests.integration.presentation.support import (
+    ListLogHandler,
+    build_client,
+    build_test_application,
+)
 
 
 def test_sequential_idempotent_replay_does_not_repeat_triage(
@@ -133,32 +137,39 @@ def test_invalid_query_parameters_use_validation_policy(
 def test_structured_logs_include_safe_metadata_without_sensitive_content(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
-    caplog: pytest.LogCaptureFixture,
 ) -> None:
     client = build_client(tmp_path, monkeypatch)
-    caplog.set_level(logging.INFO, logger="ai_ticket_triage.request")
+    logger = logging.getLogger("ai_ticket_triage.request")
+    logger.disabled = False
+    logger.setLevel(logging.INFO)
+    handler = ListLogHandler()
+    logger.addHandler(handler)
     sensitive_subject = "PRIVATE-SUBJECT-7788"
     sensitive_message = "PRIVATE-MESSAGE-9911"
     secret_key = "PRIVATE-IDEMPOTENCY-KEY"
 
-    response = client.post(
-        "/api/v1/tickets",
-        json={"subject": sensitive_subject, "message": sensitive_message},
-        headers={
-            "Idempotency-Key": secret_key,
-            "X-Request-ID": "safe-request-id",
-        },
-    )
+    try:
+        response = client.post(
+            "/api/v1/tickets",
+            json={"subject": sensitive_subject, "message": sensitive_message},
+            headers={
+                "Idempotency-Key": secret_key,
+                "X-Request-ID": "safe-request-id",
+            },
+        )
+    finally:
+        logger.removeHandler(handler)
 
     assert response.status_code == 201
-    log_text = caplog.text
+    log_text = "\n".join(record.getMessage() for record in handler.records)
     assert sensitive_subject not in log_text
     assert sensitive_message not in log_text
     assert secret_key not in log_text
-    event = json.loads(caplog.records[-1].message)
+    event = json.loads(handler.records[-1].getMessage())
     assert event["request_id"] == "safe-request-id"
     assert event["ticket_id"] == response.json()["id"]
     assert event["provider"] == "fake"
     assert event["model"] is None
     assert event["fallback_used"] is False
     assert event["duration_ms"] >= 0
+
