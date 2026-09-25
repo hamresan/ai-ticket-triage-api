@@ -8,9 +8,7 @@ from ai_ticket_triage.application.tickets.errors import (
 )
 
 
-def error_response(
-    request: Request, *, status_code: int, code: str, message: str
-) -> JSONResponse:
+def error_response(request: Request, *, status_code: int, code: str, message: str) -> JSONResponse:
     return JSONResponse(
         status_code=status_code,
         content={
@@ -22,9 +20,7 @@ def error_response(
 
 def register_error_handlers(application: FastAPI) -> None:
     @application.exception_handler(RequestValidationError)
-    async def validation_error(
-        request: Request, exc: RequestValidationError
-    ) -> JSONResponse:
+    async def validation_error(request: Request, exc: RequestValidationError) -> JSONResponse:
         return error_response(
             request,
             status_code=422,
@@ -33,9 +29,7 @@ def register_error_handlers(application: FastAPI) -> None:
         )
 
     @application.exception_handler(TicketNotFoundError)
-    async def ticket_not_found(
-        request: Request, exc: TicketNotFoundError
-    ) -> JSONResponse:
+    async def ticket_not_found(request: Request, exc: TicketNotFoundError) -> JSONResponse:
         return error_response(
             request,
             status_code=404,
@@ -44,9 +38,7 @@ def register_error_handlers(application: FastAPI) -> None:
         )
 
     @application.exception_handler(IdempotencyConflictError)
-    async def idempotency_conflict(
-        request: Request, exc: IdempotencyConflictError
-    ) -> JSONResponse:
+    async def idempotency_conflict(request: Request, exc: IdempotencyConflictError) -> JSONResponse:
         return error_response(
             request,
             status_code=409,
