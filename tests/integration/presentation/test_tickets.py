@@ -25,8 +25,7 @@ def test_create_retrieve_and_filter_ticket(tmp_path: Path, monkeypatch: pytest.M
     client = build_client(tmp_path, monkeypatch)
     response = client.post(
         "/api/v1/tickets",
-        json={"subject": "Refund", "message": "Please refund my order."},
-    )
+        json={"subject": "Refund", "message": "Please refund my order."},\n        headers={"Idempotency-Key": "create-retrieve-filter"},\n    )
     assert response.status_code == 201
     created = response.json()
     assert created["status"] == "triaged"
@@ -47,7 +46,7 @@ def test_invalid_request_uses_stable_error_envelope(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     client = build_client(tmp_path, monkeypatch)
-    response = client.post("/api/v1/tickets", json={"subject": " ", "message": "message"})
+    response = client.post(\n        "/api/v1/tickets",\n        json={"subject": " ", "message": "message"},\n        headers={"Idempotency-Key": "invalid-request"},\n    )
     assert response.status_code == 422
     body = response.json()
     assert body["error"] == {
