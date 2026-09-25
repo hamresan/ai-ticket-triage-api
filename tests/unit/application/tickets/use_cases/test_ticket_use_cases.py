@@ -78,9 +78,7 @@ def test_create_ticket_rejects_key_reuse_with_different_payload() -> None:
     )
 
     async def exercise() -> None:
-        await create_ticket.execute(
-            CreateTicketInput("Subject", "First body", "conflict-key")
-        )
+        await create_ticket.execute(CreateTicketInput("Subject", "First body", "conflict-key"))
         with pytest.raises(IdempotencyConflictError):
             await create_ticket.execute(
                 CreateTicketInput("Subject", "Different body", "conflict-key")
