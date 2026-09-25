@@ -1,201 +1,224 @@
 # AI Support Ticket Triage API
 
-> A reliable FastAPI workflow that turns incoming support tickets into validated, structured triage decisions—with deterministic fallbacks when an AI provider is unavailable.
+[![Quality](https://github.com/hamresan/ai-ticket-triage-api/actions/workflows/quality.yml/badge.svg)](https://github.com/hamresan/ai-ticket-triage-api/actions/workflows/quality.yml)
 
-**Status:** Under active development. Stage 6 adds idempotent ticket creation, deterministic query semantics, centralized safe API errors, and lightweight structured observability.
+A production-oriented FastAPI reference service that turns support tickets into validated, persisted triage decisions with deterministic fallback when an AI provider is unavailable.
 
-## The problem
+The service creates, triages, retrieves, and filters tickets. Suggested replies are **drafts only**; this project never sends customer messages automatically.
 
-Support teams receive a growing volume of messages that need consistent categorisation, prioritisation, and safe first responses. A generic chatbot is not enough: the output must be structured, validated, persisted, and safe to hand to a human workflow.
+## What it demonstrates
 
-This service receives a ticket and produces a decision such as:
-
-```json
-{
-  "category": "refund",
-  "priority": "high",
-  "sentiment": "frustrated",
-  "needs_human_review": true,
-  "suggested_reply": "I’m sorry this has been frustrating. A support specialist will review your refund request shortly.",
-  "provenance": "fallback"
-}
-```
-
-The suggested reply is always a **draft**. The service does not send messages to customers or take autonomous actions.
-
-## Key features
-
-- Create, store, retrieve, and filter support tickets
-- Structured triage: category, priority, sentiment, human-review flag, and reply draft
-- Deterministic rule-based triage that works without a model, API key, or network
-- Configurable Fake provider for repeatable local demos and automated tests
-- Optional Ollama and OpenAI-compatible adapters behind one provider contract
-- Strict validation of untrusted model output before it reaches business state
-- Safe fallback when a provider times out, fails, or returns malformed output
-- SQLite-first local development with PostgreSQL compatibility
-- FastAPI/OpenAPI, Docker Compose, Ruff, Pyright, pytest, and CI
-
-## Why it is useful as a reference project
-
-This is intentionally an operational AI component—not an unbounded agent demo. It shows the engineering decisions businesses need when integrating AI into an existing workflow:
-
-| Concern | Approach |
-| --- | --- |
-| Reliability | Deterministic fallback and explicit decision provenance |
-| Safety | Model output is validated; ambiguous cases route to human review |
-| Testability | Fake and scripted providers; normal tests need no model/API key |
-| Maintainability | Clean Architecture and dependency injection |
-| Data | Persisted ticket and triage lifecycle, query filters, and migrations |
-| Delivery | Docker, automated checks, typed configuration, documented API |
-
-## Planned workflow
-
-```text
-POST /api/v1/tickets
-    │
-    ▼
-Validate input → create ticket → request triage decision
-                                      │
-                         AI provider ─┴─ rule-based fallback
-                                      │
-                                      ▼
-                     validate decision → persist → return response
-```
-
-A provider may help understand the message, but it never controls persistence rules, output schema, or customer communication.
-
-## Technology stack
-
-- Python 3.12
-- FastAPI and Uvicorn
-- Async SQLAlchemy and Alembic
-- SQLite for simple local usage; PostgreSQL-compatible repository contract
-- `uv` for dependency management
-- Ollama / OpenAI-compatible APIs as optional adapters
-- Docker and Docker Compose
-- pytest, HTTPX, Ruff, Pyright, and pytest-cov
+- Clean Architecture with framework-free domain/application layers
+- Async SQLAlchemy persistence and Alembic migrations
+- Deterministic Fake provider requiring no model, credential, or network
+- Optional Ollama and OpenAI-compatible provider adapters
+- Strict validation of untrusted provider output
+- Deterministic fallback and explicit decision provenance
+- Database-backed idempotent ticket creation, including concurrent duplicates
+- Deterministic filtering, ordering, and pagination
+- Safe centralized API errors with request IDs
+- Structured operational logging without ticket text, prompts, credentials, idempotency keys, or raw provider output
+- Ruff, strict Pyright, pytest branch coverage, OpenAPI contract checks, Docker smoke tests, and GitHub Actions CI
 
 ## Architecture
 
 ```text
 src/ai_ticket_triage/
-├── domain/             # Ticket, decision, policies, domain errors
-├── application/        # use cases, ports, DTOs
-├── infrastructure/     # database and provider adapters, settings
-├── presentation/       # FastAPI routes, HTTP mapping, error handlers
-└── composition_root/   # dependency wiring and application factory
+├── domain/             # entities, value objects, domain policies/errors
+├── application/        # use cases, DTOs, ports, application policies
+├── infrastructure/     # SQLAlchemy and AI-provider adapters, settings
+├── presentation/       # FastAPI routes, schemas, mappers, middleware/errors
+└── composition_root/   # explicit dependency wiring
 ```
 
-The domain and application layers do not import FastAPI, SQLAlchemy, or provider SDK types. Provider-specific configuration and HTTP clients remain in infrastructure adapters.
+The domain and application layers do not import FastAPI, SQLAlchemy, or provider SDK types. Provider-specific transport and configuration stay in infrastructure.
 
-## Prerequisites
+## Requirements
 
-For the planned v1 release:
-
-- Python 3.12+
+- Python 3.12
 - [uv](https://docs.astral.sh/uv/)
-- Docker with Docker Compose (optional; recommended for PostgreSQL)
+- Docker (optional, only for the container workflow)
 
-## Installation
+## Quick start — SQLite + Fake provider
 
-### Local development with the Fake provider
-
-The Fake provider is the default local path. It enables an end-to-end workflow without Ollama, an OpenAI key, or internet access.
+The default configuration is the simplest path and needs no external AI access.
 
 ```bash
 git clone https://github.com/hamresan/ai-ticket-triage-api.git
 cd ai-ticket-triage-api
-
 cp .env.example .env
-uv sync
+
+uv sync --locked
 uv run alembic upgrade head
-uv run uvicorn ai_ticket_triage.presentation.app:create_app --factory --reload
+uv run uvicorn ai_ticket_triage.presentation.app:create_app --factory --host 127.0.0.1 --port 8000
 ```
 
-Open:
-
-- API: `http://localhost:8000`
-- Swagger UI: `http://localhost:8000/docs`
-
-### Docker Compose
-
-Once the release hardening stage adds the verified Compose setup:
+In another terminal:
 
 ```bash
-git clone https://github.com/hamresan/ai-ticket-triage-api.git
-cd ai-ticket-triage-api
-
-cp .env.example .env
-docker compose up --build
+curl --fail http://127.0.0.1:8000/health
 ```
 
-## Configuration
+Expected response:
 
-The planned environment contract keeps AI optional:
-
-```dotenv
-# fake (default), ollama, or openai_compatible
-TRIAGE_PROVIDER=fake
-
-# Simple local database
-DATABASE_URL=sqlite+aiosqlite:///./ai_ticket_triage.db
-
-# Required for ollama and openai_compatible
-PROVIDER_MODEL=qwen3:8b
-PROVIDER_BASE_URL=http://localhost:11434
-PROVIDER_TIMEOUT_SECONDS=20
-
-# Optional. Used when the selected OpenAI-compatible endpoint requires bearer auth.
-# Keep real credentials only in your local environment or secret manager.
-PROVIDER_API_KEY=
+```json
+{"status":"ok"}
 ```
 
-Never commit a real API key. The default test suite and Fake-provider workflow must remain fully functional without any credentials.
+Swagger UI is available at `http://127.0.0.1:8000/docs`.
 
-## Quick start
+## Create and triage a ticket
 
-Stage 3 exposes the complete create-and-triage flow. A new ticket is committed first, triage runs after that transaction is complete, and the final `triaged` decision is persisted in a separate commit.
+`Idempotency-Key` is required and must contain 1–255 characters.
 
 ```bash
-curl --request POST "http://localhost:8000/api/v1/tickets" \\
-  --header "Content-Type: application/json" \\
+curl --request POST "http://127.0.0.1:8000/api/v1/tickets" \
+  --header "Content-Type: application/json" \
+  --header "Idempotency-Key: demo-ticket-001" \
   --data '{
-    "subject": "Refund request for my duplicate charge",
-    "message": "I was charged twice and need help getting the duplicate payment refunded."
+    "subject": "Cannot sign in",
+    "message": "The login page keeps returning an error."
   }'
 ```
 
-The response contains the persisted ticket with `status: "triaged"` and a `decision` object containing category, priority, sentiment, `needs_human_review`, a draft `suggested_reply`, and provenance. The default Fake provider uses `provenance: "provider"`; deterministic fallback decisions use `provenance: "fallback"`.
+The first accepted request returns HTTP `201`. With the default Fake provider, the response has this shape (UUID and timestamps vary):
 
-## Planned API
+```json
+{
+  "id": "00000000-0000-0000-0000-000000000000",
+  "subject": "Cannot sign in",
+  "message": "The login page keeps returning an error.",
+  "status": "triaged",
+  "created_at": "2026-09-25T12:00:00Z",
+  "updated_at": "2026-09-25T12:00:00Z",
+  "decision": {
+    "category": "technical",
+    "priority": "medium",
+    "sentiment": "neutral",
+    "needs_human_review": false,
+    "suggested_reply": "This is a draft response from the Fake triage provider.",
+    "provenance": "provider"
+  }
+}
+```
 
-| Method | Endpoint | Description |
+Replay the same key with the same subject/message to receive the persisted ticket with HTTP `200` and no repeated triage. Reuse the key with a different payload and the API returns HTTP `409`:
+
+```json
+{
+  "error": {
+    "code": "idempotency_conflict",
+    "message": "Idempotency key was already used for a different request."
+  },
+  "request_id": "request-id"
+}
+```
+
+The `request_id` is also returned in the `X-Request-ID` response header.
+
+## Retrieve and query tickets
+
+Retrieve one ticket:
+
+```bash
+curl "http://127.0.0.1:8000/api/v1/tickets/<ticket-id>"
+```
+
+List tickets:
+
+```bash
+curl "http://127.0.0.1:8000/api/v1/tickets"
+```
+
+Filter and paginate:
+
+```bash
+curl "http://127.0.0.1:8000/api/v1/tickets?status=triaged&category=technical&priority=medium&needs_human_review=false&offset=0&limit=50"
+```
+
+Supported filters are `status`, `category`, `priority`, and `needs_human_review`. Results are ordered by creation time and ticket ID. `offset` defaults to 0 and must be non-negative; `limit` defaults to 50 and must be between 1 and 100.
+
+## API
+
+| Method | Endpoint | Behavior |
 | --- | --- | --- |
-| `POST` | `/api/v1/tickets` | Create, triage, persist, and return the final ticket decision |
-| `GET` | `/api/v1/tickets/{ticket_id}` | Retrieve one ticket |
-| `GET` | `/api/v1/tickets` | List tickets with status filtering |
-| `GET` | `/health` | Health check for local and container use |
+| `GET` | `/health` | Process health check |
+| `POST` | `/api/v1/tickets` | Idempotently create, triage, persist, and return a ticket |
+| `GET` | `/api/v1/tickets/{ticket_id}` | Retrieve one ticket or return `ticket_not_found` |
+| `GET` | `/api/v1/tickets` | Deterministically filter, order, and paginate tickets |
 
-Stage 3 responses expose the persisted triage decision. Suggested replies are drafts only and are never sent by this service.
+FastAPI serves the generated OpenAPI document at `/openapi.json`. CI contract tests verify that the documented public paths, required idempotency header, filters, and response models remain present.
 
-## Triage policy
+## Configuration
 
-The initial categories are:
+The default `.env.example` uses SQLite and the Fake provider:
 
-- `refund`
-- `billing`
-- `account_access`
-- `technical`
-- `abusive`
-- `unknown`
+```dotenv
+APP_NAME="AI Support Ticket Triage API"
+APP_ENV=local
+DATABASE_URL=sqlite+aiosqlite:///./ai_ticket_triage.db
+TRIAGE_PROVIDER=fake
+PROVIDER_MODEL=
+PROVIDER_BASE_URL=
+PROVIDER_TIMEOUT_SECONDS=10
+PROVIDER_API_KEY=
+```
 
-Rule-based fallback is conservative. If a message is ambiguous, incomplete, unsafe, or does not match a reliable category, it is marked `needs_human_review: true` rather than given false confidence.
+### Ollama
 
-Provider results are rejected and replaced by fallback when they contain invalid JSON, unknown enums, invalid/oversized fields, unsafe reply shapes, or a provider timeout/error.
+```dotenv
+TRIAGE_PROVIDER=ollama
+PROVIDER_MODEL=qwen3:8b
+PROVIDER_BASE_URL=http://localhost:11434
+PROVIDER_TIMEOUT_SECONDS=20
+```
 
-## Development and testing
+Ollama uses its native `/api/chat` endpoint.
 
-Once the foundation stage is completed, run the full quality gate:
+### OpenAI-compatible endpoint
+
+```dotenv
+TRIAGE_PROVIDER=openai_compatible
+PROVIDER_MODEL=your-model-name
+PROVIDER_BASE_URL=https://your-provider.example/v1
+PROVIDER_TIMEOUT_SECONDS=20
+PROVIDER_API_KEY=
+```
+
+The adapter calls `/chat/completions` relative to `PROVIDER_BASE_URL`. `PROVIDER_API_KEY` is optional and, when present, is sent as bearer authentication. Never commit real credentials.
+
+All providers feed the same versioned triage task and strict structured-output validation pipeline. Recoverable provider failures use deterministic fallback.
+
+## Docker
+
+The repository includes a tested application image. It intentionally keeps the release container path on SQLite; no PostgreSQL Compose setup is advertised because a Compose/PostgreSQL path is not currently shipped and CI-verified.
+
+Build:
+
+```bash
+docker build -t ai-ticket-triage .
+```
+
+Run migrations and the API in one container:
+
+```bash
+docker run --rm --name ai-ticket-triage \
+  -p 8000:8000 \
+  ai-ticket-triage \
+  sh -c 'alembic upgrade head && exec uvicorn ai_ticket_triage.presentation.app:create_app --factory --host 0.0.0.0 --port 8000'
+```
+
+Then use the same health/create/query commands shown above. Container data is ephemeral unless you provide persistent storage and an appropriate `DATABASE_URL`.
+
+## Development checks
+
+Run the complete local quality gate:
+
+```bash
+make check
+```
+
+Equivalent commands:
 
 ```bash
 uv run ruff check src tests
@@ -204,72 +227,28 @@ uv run pyright src tests
 uv run pytest --cov=ai_ticket_triage --cov-branch --cov-report=term-missing
 ```
 
-The test suite is designed around real behaviour:
+Overall branch coverage must remain at least 85%. Tests are behavioral: unit tests cover domain/application/provider boundaries; integration tests use real temporary SQLite databases and Alembic; API tests exercise the real FastAPI application. Normal tests never require a live AI provider.
 
-- **Unit tests** cover domain policies, decision validation, fallbacks, prompts, mappers, and factories.
-- **Integration tests** use a real temporary SQLite database and async SQLAlchemy repositories.
-- **API tests** exercise the real FastAPI application and request/response schemas.
-- **Provider tests** use Fake/scripted transports; a live Ollama server or external API is never required for normal tests.
+## Safety, privacy, and known limitations
 
-Quality targets are at least **85% branch coverage** overall and **90% branch coverage** in domain/application code. Coverage is a floor; meaningful tests for validation, failures, provider errors, and persistence are required.
+- Ticket text and provider prompts may contain sensitive data. Normal structured request logs intentionally exclude them.
+- Provider output is untrusted and validated before persistence.
+- Suggested replies are drafts and are never sent automatically.
+- Authentication, authorization, multi-tenancy, rate limiting, retention/deletion workflows, background queues, CRM/helpdesk integration, RAG, analytics dashboards, and a frontend are outside this reference service.
+- The included Docker release path uses SQLite. PostgreSQL is not documented as a supported release path until its driver, migrations, Compose configuration, and CI verification are shipped together.
+- Before internet-facing production use, add deployment-specific security and operational controls described in [SECURITY.md](./SECURITY.md).
 
-## Roadmap
+## Repository documentation
 
-Development is split into individually reviewed branches:
-
-1. Foundation and executable application shell
-2. Domain model and application contracts
-3. SQLite persistence and basic ticket API
-4. Deterministic triage, Fake provider, and fallback
-5. Structured Ollama adapter and validated output
-6. OpenAI-compatible adapter and explicit provider selection
-7. Reliability, idempotency, filtering, and API error policy
-8. Release hardening, documentation, Docker, and public repository hygiene
-
-Each stage is developed on a dedicated branch and merges only after Ruff, formatting, Pyright, tests, branch coverage, and CI pass.
-
-## Safety and privacy notes
-
-- Do not log ticket text, full prompts, credentials, or raw provider responses by default.
-- Treat provider output as untrusted data and validate it before persistence.
-- A draft reply must not be sent automatically to a customer.
-- Apply authentication, authorization, rate limiting, and retention rules before using this service with real support data.
-- Prefer a local/Fake provider for demos and tests that do not require a live model.
-
-## Scope and non-goals for v1
-
-The first version deliberately excludes:
-
-- Sending replies, email/CRM/helpdesk integrations
-- Authentication and multi-tenancy
-- RAG/knowledge-base retrieval
-- Background queues and analytics dashboards
-- A frontend
-- Autonomous support agents
-
-These are sensible future extensions, but are out of scope so the core triage behaviour remains clear, safe, and thoroughly testable.
+- [Implementation roadmap](./docs/implementation-roadmap.md)
+- [Release checklist](./docs/release-checklist.md)
+- [Security policy](./SECURITY.md)
+- [MIT License](./LICENSE)
 
 ## Contributing
 
-Contributions are welcome once the implementation is available. Keep changes focused, follow the package boundaries, add mirrored behavioural tests, run the quality checks, and never commit customer data or credentials.
+Keep changes focused, preserve package boundaries, add mirrored behavioral tests, run `make check`, and never commit credentials or customer data.
 
 ## License
 
-This project will be released under the [MIT License](./LICENSE).
-
-
-## Stage 6 reliability and query policy
-
-Ticket creation requires a caller-supplied `Idempotency-Key` header (1–255 characters). The first accepted request creates and triages the ticket and returns `201`. Replaying the same key with the same subject and message returns the already persisted ticket with `200` and does not repeat triage. Reusing the key with a different payload returns `409 idempotency_conflict`. A database primary-key constraint on the idempotency record is part of the invariant, including concurrent requests.
-
-`GET /api/v1/tickets` supports `status`, `category`, `priority`, and `needs_human_review` filters. Results are ordered deterministically by creation time and ticket ID. Pagination uses `offset` (minimum 0, default 0) and `limit` (1–100, default 50). Invalid query values use the stable validation-error envelope.
-
-Expected API errors use a centralized envelope containing a stable error code/message and the request ID. The same request ID is returned in `X-Request-ID`. Lightweight request logs contain only safe operational metadata such as request ID, ticket ID when available, configured provider/model, duration, fallback usage, and status code. Ticket subject/message, prompts, credentials, idempotency keys, raw provider output, and internal database/provider details are intentionally excluded.
-
-## Provider configuration
-
-The default triage provider remains deterministic `fake`, so local development and CI require no model, credential, or network access. Set `TRIAGE_PROVIDER=ollama` for Ollama or `TRIAGE_PROVIDER=openai_compatible` for an endpoint that implements the OpenAI chat-completions HTTP shape.
-
-Both network providers require `PROVIDER_MODEL` and `PROVIDER_BASE_URL`; `PROVIDER_TIMEOUT_SECONDS` is optional. `PROVIDER_API_KEY` is optional for OpenAI-compatible endpoints and, when set, is sent as a bearer token. Ollama uses its native `/api/chat` endpoint; OpenAI-compatible providers use `/chat/completions` relative to the configured base URL.
-
-All providers feed the same versioned v1 triage prompt and strict structured-output validation pipeline. Malformed, invalid, oversized, timed-out, or failed provider responses are mapped to provider failures so the application can use deterministic fallback. Never commit real credentials.
+MIT.
