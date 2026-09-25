@@ -19,10 +19,10 @@ from ai_ticket_triage.presentation.schemas.tickets import (
 
 __all__ = [
     "CategoryQuery",
-    "ErrorDetailResponse",
-    "ErrorResponse",
     "CategoryResponse",
     "CreateTicketRequest",
+    "ErrorDetailResponse",
+    "ErrorResponse",
     "PriorityQuery",
     "PriorityResponse",
     "ProvenanceResponse",
