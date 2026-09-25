@@ -47,9 +47,7 @@ def test_idempotency_key_reuse_with_different_payload_is_conflict(
     assert conflict.json()["request_id"] == conflict.headers["X-Request-ID"]
 
 
-def test_idempotency_key_is_required(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_idempotency_key_is_required(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     client = build_client(tmp_path, monkeypatch)
 
     response = client.post(
@@ -104,9 +102,7 @@ def test_filters_ordering_and_pagination_are_deterministic(
     page = client.get("/api/v1/tickets", params={"offset": 1, "limit": 1})
 
     assert matching.status_code == 200
-    assert [item["id"] for item in matching.json()] == [
-        item["id"] for item in all_tickets
-    ]
+    assert [item["id"] for item in matching.json()] == [item["id"] for item in all_tickets]
     assert [item["id"] for item in page.json()] == [all_tickets[1]["id"]]
     assert client.get("/api/v1/tickets", params={"category": "billing"}).json() == []
 
