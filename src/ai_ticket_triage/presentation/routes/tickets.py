@@ -11,6 +11,7 @@ from ai_ticket_triage.presentation.mappers import TicketPresentationMapper
 from ai_ticket_triage.presentation.schemas import (
     CategoryQuery,
     CreateTicketRequest,
+    ErrorResponse,
     PriorityQuery,
     TicketResponse,
     TicketStatusQuery,
@@ -23,7 +24,16 @@ def create_ticket_router(
     router = APIRouter(prefix="/api/v1/tickets", tags=["tickets"])
     ticket_use_cases_dependency = Depends(dependency)
 
-    @router.post("", response_model=TicketResponse, status_code=201)
+    @router.post(
+        "",
+        response_model=TicketResponse,
+        status_code=201,
+        responses={
+            200: {"model": TicketResponse, "description": "Idempotent replay"},
+            409: {"model": ErrorResponse, "description": "Idempotency key conflict"},
+            422: {"model": ErrorResponse, "description": "Request validation failed"},
+        },
+    )
     async def create_ticket(
         request_body: CreateTicketRequest,
         request: Request,
@@ -46,7 +56,14 @@ def create_ticket_router(
         )
         return TicketPresentationMapper.to_response(ticket)
 
-    @router.get("/{ticket_id}", response_model=TicketResponse)
+    @router.get(
+        "/{ticket_id}",
+        response_model=TicketResponse,
+        responses={
+            404: {"model": ErrorResponse, "description": "Ticket not found"},
+            422: {"model": ErrorResponse, "description": "Request validation failed"},
+        },
+    )
     async def get_ticket(
         ticket_id: UUID,
         request: Request,
@@ -58,7 +75,13 @@ def create_ticket_router(
         request.state.ticket_id = str(ticket.id)
         return TicketPresentationMapper.to_response(ticket)
 
-    @router.get("", response_model=list[TicketResponse])
+    @router.get(
+        "",
+        response_model=list[TicketResponse],
+        responses={
+            422: {"model": ErrorResponse, "description": "Query validation failed"},
+        },
+    )
     async def list_tickets(
         status: TicketStatusQuery | None = None,
         category: CategoryQuery | None = None,
