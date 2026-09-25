@@ -17,9 +17,9 @@ def build_test_application(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> F
     monkeypatch.setenv("DATABASE_URL", database_url)
     command.upgrade(Config("alembic.ini"), "head")
     settings = Settings(
-        _env_file=None,
         app_env=AppEnvironment.TEST,
         database_url=database_url,
+        provider_model=None,
     )
     return build_application(settings)
 
