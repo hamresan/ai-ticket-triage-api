@@ -46,10 +46,12 @@ class SqlAlchemyTicketRepository(TicketRepository):
                 if record is None:
                     raise
                 if record.fingerprint != fingerprint:
-                    raise IdempotencyConflictError
+                    raise IdempotencyConflictError from None
                 model = await session.get(TicketModel, record.ticket_id)
                 if model is None:
-                    raise RuntimeError("Idempotency record references a missing ticket.")
+                    raise RuntimeError(
+                        "Idempotency record references a missing ticket."
+                    ) from None
                 return TicketCreationResult(
                     ticket=TicketMapper.to_domain(model), created=False
                 )
