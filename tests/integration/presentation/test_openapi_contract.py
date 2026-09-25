@@ -26,9 +26,7 @@ def test_openapi_matches_public_ticket_contract(
 
     listing = paths["/api/v1/tickets"]["get"]
     query_parameters = {
-        parameter["name"]
-        for parameter in listing["parameters"]
-        if parameter["in"] == "query"
+        parameter["name"] for parameter in listing["parameters"] if parameter["in"] == "query"
     }
     assert query_parameters == {
         "status",
